@@ -1,0 +1,18 @@
+{
+  "name": "Anil Plastics - Order & Warehouse App",
+  "short_name": "Anil Plastics",
+  "description": "Offline Order Booking, Stock Lookup, Catalogues & Warehouse Tasks",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f2f7f4",
+  "theme_color": "#277e56",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

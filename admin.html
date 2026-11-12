@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anil Plastics — Office Workflow Dashboard (Ver 08)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #277e56;
+    --green-dark: #1b5e3f;
+    --green-light: #e6f5ed;
+    --bg: #f1f6f3;
+    --text: #111d16;
+    --muted: #4b6154;
+    --border: #cde0d5;
+    --accent: #ffeb3b;
+    --danger: #b91c1c;
+    --blue: #0284c7;
+    --amber: #b45309;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; }
+  button { cursor: pointer; font: inherit; }
+
+  /* Top Bar */
+  .topbar {
+    background: var(--green-dark); color: #fff; padding: 12px 20px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.18);
+  }
+  .brand { font-size: 20px; font-weight: 900; display: flex; align-items: center; gap: 10px; }
+  .brand span { background: var(--accent); color: #103b25; font-size: 12px; padding: 2px 8px; border-radius: 6px; }
+  .nav { display: flex; gap: 6px; flex-wrap: wrap; }
+  .nav button {
+    background: rgba(255,255,255,.12); color: #e2f7ec; border: 2px solid transparent;
+    padding: 9px 15px; border-radius: 8px; font-weight: 800; font-size: 14px;
+  }
+  .nav button.active { background: var(--accent); color: #103b25; }
+  .poll-badge { font-size: 12.5px; background: rgba(0,0,0,.25); padding: 6px 10px; border-radius: 8px; color: #a7f3d0; font-weight: 700; }
+
+  .container { max-width: 1380px; margin: 0 auto; padding: 18px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Cards & KPI Grid */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .kpi {
+    background: #fff; border: 2px solid var(--border); border-radius: 12px; padding: 14px;
+    cursor: pointer; transition: transform .1s;
+  }
+  .kpi:hover { border-color: var(--green); transform: translateY(-1px); }
+  .kpi b { display: block; font-size: 28px; color: var(--green-dark); line-height: 1.1; }
+  .kpi span { font-size: 12.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+
+  .panel { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 18px; }
+  .panel-title { font-size: 17px; font-weight: 900; color: var(--green-dark); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* Forms & Buttons */
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .inp, .sel {
+    padding: 10px 12px; border: 1.5px solid #a8d0ba; border-radius: 8px; font-size: 14.5px;
+    font-weight: 600; background: #fafffc; color: var(--text);
+  }
+  .btn { padding: 9px 14px; border-radius: 8px; border: none; font-weight: 800; font-size: 13.5px; display: inline-flex; align-items: center; gap: 5px; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-amber { background: #d97706; color: #fff; }
+  .btn-red { background: #dc2626; color: #fff; }
+  .btn-light { background: #e8f5ee; color: var(--green-dark); border: 1.5px solid #a8d0ba; }
+
+  /* Tables */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: #eaf6ef; color: var(--green-dark); text-align: left; padding: 10px 10px; font-weight: 900; border-bottom: 2px solid var(--border); white-space: nowrap; }
+  td { padding: 10px 10px; border-bottom: 1px solid #e2ede6; vertical-align: top; }
+  tr:hover td { background: #f8fcfa; }
+
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+  .st-New { background: #dbeafe; color: #1e40af; }
+  .st-Released { background: #fef3c7; color: #92400e; }
+  .st-InProgress { background: #ffedd5; color: #9a3412; }
+  .st-ReadyforBilling { background: #f3e8ff; color: #6b21a8; }
+  .st-Billed { background: #dcfce7; color: #166534; }
+  .st-Dispatched { background: #ccfbf1; color: #115e59; }
+  .st-Delivered { background: #bbf7d0; color: #14532d; }
+  .st-Cancelled { background: #fee2e2; color: #991b1b; }
+
+  /* Modals */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 500; align-items: center; justify-content: center; padding: 16px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: #fff; border-radius: 14px; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+  .modal h3 { font-size: 19px; font-weight: 900; color: var(--green-dark); margin-bottom: 12px; }
+  .warn-box { background: #fef3c7; border: 1.5px solid #f59e0b; color: #92400e; padding: 10px 12px; border-radius: 8px; font-weight: 700; margin-bottom: 12px; }
+
+  /* Login Overlay */
+  .login-bg { position: fixed; inset: 0; background: #103b25; z-index: 900; display: none; align-items: center; justify-content: center; padding: 16px; }
+  .login-bg.open { display: flex; }
+  .login-box { background: #fff; border-radius: 16px; padding: 26px; width: 100%; max-width: 420px; }
+
+  @media print {
+    .topbar, .no-print { display: none !important; }
+    body { background: #fff; }
+    .panel { border: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Admin Login Overlay -->
+<div id="adminLoginBg" class="login-bg">
+  <div class="login-box">
+    <h2 style="color:var(--green-dark);font-weight:900;margin-bottom:4px">ANIL PLASTICS</h2>
+    <p style="color:var(--muted);margin-bottom:16px">Office Workflow Dashboard Sign-In</p>
+    <label style="font-size:12px;font-weight:800;display:block;margin-bottom:4px">ADMIN NAME (or leave blank for Master Key)</label>
+    <input id="admName" class="inp" style="width:100%;margin-bottom:12px" placeholder="Office Admin">
+    <label style="font-size:12px;font-weight:800;display:block;margin-bottom:4px">ADMIN PIN / KEY *</label>
+    <input id="admPin" type="password" class="inp" style="width:100%;margin-bottom:12px" placeholder="••••">
+    <label style="font-size:12px;font-weight:800;display:block;margin-bottom:4px">APPS SCRIPT /EXEC URL *</label>
+    <input id="admUrl" type="url" class="inp" style="width:100%;margin-bottom:14px" placeholder="https://script.google.com/macros/s/.../exec">
+    <button class="btn btn-green" style="width:100%;justify-content:center;padding:13px;font-size:16px" id="btnAdmLogin">🔓 Sign In to Office Dashboard</button>
+    <div id="admLoginErr" style="color:var(--danger);font-weight:700;margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- Top Navigation -->
+<header class="topbar">
+  <div class="brand">ANIL PLASTICS <span>OFFICE WORKFLOW v08</span></div>
+  <nav class="nav">
+    <button class="active" data-view="home">📊 Monitoring</button>
+    <button data-view="orders">📋 All Orders</button>
+    <button data-view="billing">🧾 Ready for Billing &amp; Dispatch</button>
+    <button data-view="stock">📦 Daily Stock</button>
+    <button data-view="users">👥 Users &amp; Setup</button>
+  </nav>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="poll-badge" id="pollBadge">Live: --</span>
+    <button class="btn btn-light" id="btnRefreshNow">🔄 Refresh</button>
+  </div>
+</header>
+
+<main class="container">
+  <!-- ================= VIEW 1: MONITORING HOME ================= -->
+  <section id="view-home" class="view active">
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px">
+      <div class="panel">
+        <div class="panel-title">👷 Warehouse Employee Workload (Active Tasks)</div>
+        <div id="workloadBox">Loading…</div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">⏰ Pending Too Long (&gt; 4 Hours)</div>
+        <div id="staleBox">Loading…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VIEW 2: ALL ORDERS ================= -->
+  <section id="view-orders" class="view">
+    <div class="panel">
+      <div class="panel-title">
+        <span>📋 Order Management</span>
+        <span style="font-size:13px;color:var(--muted)" id="ordersCountInfo">0 orders</span>
+      </div>
+      <div class="filters">
+        <select id="fStatus" class="sel">
+          <option value="ALL">All Statuses</option>
+          <option value="New">New</option>
+          <option value="Released">Released</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Ready for Billing">Ready for Billing</option>
+          <option value="Billed">Billed</option>
+          <option value="Dispatched">Dispatched</option>
+          <option value="Delivered">Delivered</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+        <input id="fSearch" class="inp" placeholder="Search Order ID, Party, Route, Salesman…" style="min-width:250px">
+        <input id="fFrom" type="date" class="inp" title="From Date">
+        <input id="fTo" type="date" class="inp" title="To Date">
+        <button class="btn btn-green" id="btnApplyFilter">Apply Filters</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Order No &amp; Date</th>
+              <th>Party &amp; Route</th>
+              <th>Salesman</th>
+              <th>Items / Total</th>
+              <th>Status &amp; Assignee</th>
+              <th>Workflow Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VIEW 3: BILLING & DISPATCH ================= -->
+  <section id="view-billing" class="view">
+    <div class="panel">
+      <div class="panel-title">
+        <span>🧾 Ready for Billing, Dispatch &amp; Delivery Queue</span>
+        <div class="no-print" style="display:flex;gap:8px">
+          <button class="btn btn-green" id="btnExportBillingExcel">📥 Export Billing Excel</button>
+          <button class="btn btn-light" onclick="window.print()">🖨️ Print / Save PDF</button>
+        </div>
+      </div>
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:12px">
+        Enter the invoice into your billing software using the fulfilled quantities below, then record the External Invoice No here to release reserved stock.
+      </p>
+      <div id="billingList"></div>
+    </div>
+  </section>
+
+  <!-- ================= VIEW 4: DAILY STOCK ================= -->
+  <section id="view-stock" class="view">
+    <div class="panel">
+      <div class="panel-title">📦 Import Daily Stock Excel / CSV (Preview &amp; Validation First)</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <input type="file" id="stockFileInp" accept=".xlsx,.xls,.csv" class="inp">
+        <button class="btn btn-green" id="btnConfirmStockUpload" style="display:none">☁️ Confirm &amp; Upload to Cloud</button>
+      </div>
+      <div id="stockPreviewBox"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">
+        <span>📊 Live Derived Stock (Available = Stock − Reserved)</span>
+        <input id="stockSearchInp" class="inp" placeholder="Filter live stock…">
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Item Name</th><th>Mfg</th><th>Barcode</th><th>Pack</th><th>Uploaded Stock</th><th>Reserved</th><th>Available</th><th>Rate</th></tr>
+          </thead>
+          <tbody id="liveStockTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VIEW 5: USERS & SETUP ================= -->
+  <section id="view-users" class="view">
+    <div class="panel">
+      <div class="panel-title">👥 Create / Update Staff Account</div>
+      <div class="filters">
+        <input id="uName" class="inp" placeholder="Full Name *">
+        <input id="uCode" class="inp" placeholder="Short Code (e.g. RAJ)" style="width:150px">
+        <input id="uPhone" class="inp" placeholder="Phone">
+        <select id="uRole" class="sel">
+          <option value="salesperson">Salesperson (Book Order)</option>
+          <option value="employee">Employee (My Tasks)</option>
+          <option value="salesperson+employee">Both (Salesperson + Employee)</option>
+          <option value="admin">Admin</option>
+        </select>
+        <input id="uPin" class="inp" placeholder="4-6 Digit PIN *" maxlength="6" style="width:150px">
+        <select id="uActive" class="sel">
+          <option value="true">Active: Yes</option>
+          <option value="false">Active: No (Disable)</option>
+        </select>
+        <button class="btn btn-green" id="btnSaveUser">💾 Save User</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Code</th><th>Phone</th><th>Role</th><th>Active</th><th>Action</th></tr></thead>
+          <tbody id="usersTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">🗄️ Maintenance &amp; Session</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-amber" id="btnArchiveOld">📦 Archive Orders Older Than 90 Days</button>
+        <button class="btn btn-red" id="btnAdmLogout">🔒 Sign Out</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= MODAL: RELEASE / REASSIGN ================= -->
+<div id="releaseModal" class="modal-bg">
+  <div class="modal">
+    <h3 id="relModalTitle">Release Order to Warehouse</h3>
+    <div id="relStockWarn" class="warn-box" style="display:none"></div>
+    <div style="display:grid;gap:10px;margin-bottom:14px">
+      <div>
+        <label style="font-size:12px;font-weight:800;display:block;margin-bottom:4px">ASSIGN TO EMPLOYEE *</label>
+        <select id="relEmployeeSel" class="sel" style="width:100%"></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:12px;font-weight:800;display:block;margin-bottom:4px">PRIORITY</label>
+          <select id="relPrioritySel" class="sel" style="width:100%">
+            <option value="Normal">Normal</option>
+            <option value="High">High</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:800;display:block;margin-bottom:4px">DUE TIME (OPTIONAL)</label>
+          <input id="relDueInp" class="inp" style="width:100%" placeholder="e.g. Today 5:00 PM">
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-light" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-green" id="btnConfirmRelease">✅ Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: SPLIT ORDER ================= -->
+<div id="splitModal" class="modal-bg">
+  <div class="modal">
+    <h3 id="splitModalTitle">Split Order into Child Orders (-A and -B)</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Set how much quantity goes into Order <b>-A</b>; the remainder automatically goes into Order <b>-B</b>.</p>
+    <div id="splitItemsList"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-light" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-amber" id="btnConfirmSplit">✂️ Create -A and -B Orders</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: ORDER DETAIL & TIMELINE ================= -->
+<div id="detailModal" class="modal-bg">
+  <div class="modal">
+    <h3 id="detTitle">Order Details &amp; Audit Timeline</h3>
+    <div id="detBody"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-light" onclick="closeModals()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="admin_api.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  let ALL_ORDERS = [];
+  let USERS = [];
+  let LIVE_STOCK = [];
+  let PENDING_STOCK_CSV = '';
+  let PENDING_STOCK_NAME = '';
+  let PENDING_STOCK_COUNT = 0;
+  let ACTIVE_ORDER = null;
+  let RELEASE_MODE = 'release'; // 'release' | 'reassign'
+
+  window.closeModals = () => document.querySelectorAll('.modal-bg').forEach((m) => m.classList.remove('open'));
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function checkAuth() {
+    const cfg = AnilAdminApi.getConfig();
+    if (!cfg.url || !cfg.token) {
+      $('admUrl').value = cfg.url || '';
+      $('adminLoginBg').classList.add('open');
+      return false;
+    }
+    $('adminLoginBg').classList.remove('open');
+    return true;
+  }
+
+  $('btnAdmLogin').onclick = async () => {
+    const url = $('admUrl').value.trim();
+    const name = $('admName').value.trim();
+    const pin = $('admPin').value.trim();
+    if (!url || !pin) { $('admLoginErr').textContent = 'Enter both URL and PIN.'; return; }
+    AnilAdminApi.setConfig(url, null);
+    try {
+      const res = await AnilAdminApi.login(name, pin);
+      if (!res.ok) { $('admLoginErr').textContent = res.message; return; }
+      AnilAdminApi.setConfig(url, res.user);
+      $('admLoginErr').textContent = '';
+      checkAuth();
+      refreshAll();
+    } catch (e) {
+      $('admLoginErr').textContent = e.message;
+    }
+  };
+
+  window.addEventListener('ap:admin-auth-expired', () => {
+    AnilAdminApi.setConfig(undefined, null);
+    checkAuth();
+  });
+
+  // View Switching
+  document.querySelectorAll('.nav button').forEach((btn) => {
+    btn.onclick = () => {
+      document.querySelectorAll('.nav button').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+      $('view-' + btn.dataset.view).classList.add('active');
+      if (btn.dataset.view === 'stock') loadLiveStock();
+      if (btn.dataset.view === 'users') loadUsers();
+      if (btn.dataset.view === 'billing') renderBillingQueue();
+    };
+  });
+
+  async function refreshAll() {
+    if (!checkAuth()) return;
+    try {
+      const [statsRes, ordRes, usrRes] = await Promise.all([
+        AnilAdminApi.dashboardStats(),
+        AnilAdminApi.orders({ from: $('fFrom').value, to: $('fTo').value }),
+        AnilAdminApi.getUsers()
+      ]);
+      if (statsRes.ok) renderHome(statsRes);
+      if (ordRes.ok) {
+        ALL_ORDERS = ordRes.orders || [];
+        renderOrdersTable();
+        renderBillingQueue();
+      }
+      if (usrRes.ok) {
+        USERS = usrRes.users || [];
+        renderUsersTable();
+      }
+      $('pollBadge').textContent = 'Live: ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch (e) {
+      $('pollBadge').textContent = 'Sync error';
+    }
+  }
+
+  function renderHome(st) {
+    const statuses = ['New', 'Released', 'In Progress', 'Ready for Billing', 'Billed', 'Dispatched', 'Delivered', 'Cancelled'];
+    $('kpiGrid').innerHTML = statuses.map((s) => `
+      <div class="kpi" onclick="filterByStatus('${s}')">
+        <b>${st.counts[s] || 0}</b>
+        <span>${s}</span>
+      </div>`).join('');
+
+    const wEntries = Object.entries(st.workload || {});
+    $('workloadBox').innerHTML = wEntries.length
+      ? wEntries.map(([emp, cnt]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><b>👷 ${esc(emp)}</b><span><b>${cnt}</b> active order(s)</span></div>`).join('')
+      : '<p style="color:var(--muted)">No active tasks currently assigned.</p>';
+
+    const stale = st.staleOrders || [];
+    $('staleBox').innerHTML = stale.length
+      ? stale.map((o) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span><b>${esc(o.id)}</b> · ${esc(o.partyName)} (${esc(o.status)})</span><b style="color:var(--danger)">${o.ageHours}h old</b></div>`).join('')
+      : '<p style="color:var(--green-dark);font-weight:700">✓ All active orders are within SLA.</p>';
+  }
+
+  window.filterByStatus = (st) => {
+    $('fStatus').value = st;
+    document.querySelector('.nav button[data-view="orders"]').click();
+    renderOrdersTable();
+  };
+
+  function renderOrdersTable() {
+    const st = $('fStatus').value;
+    const q = $('fSearch').value.toLowerCase().trim();
+    const rows = ALL_ORDERS.filter((o) => {
+      if (st !== 'ALL' && o.status !== st) return false;
+      if (q && !`${o.id} ${o.partyName} ${o.route} ${o.salesman}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    $('ordersCountInfo').textContent = `${rows.length} of ${ALL_ORDERS.length} orders`;
+
+    $('ordersTbody').innerHTML = rows.map((o) => {
+      const stCls = 'st-' + String(o.status || 'New').replace(/\s+/g, '');
+      const isNew = o.status === 'New';
+      const canReassign = (o.status === 'Released' || o.status === 'In Progress');
+      const canCancel = !['Billed', 'Delivered', 'Cancelled'].includes(o.status);
+      return `<tr>
+        <td><b>${esc(o.id)}</b><br><small style="color:var(--muted)">${esc(o.date)} ${esc(o.time)}</small></td>
+        <td><b>${esc(o.partyName)}</b><br><small style="color:var(--muted)">${esc(o.route || '-')}</small></td>
+        <td>${esc(o.salesman)}</td>
+        <td><b>${o.items.length}</b> items · <b>₹${Number(o.total || 0).toFixed(2)}</b></td>
+        <td>
+          <span class="badge ${stCls}">${esc(o.status)}</span>
+          ${o.assignedTo ? `<div style="font-size:12px;margin-top:3px">👷 <b>${esc(o.assignedTo)}</b> (${esc(o.priority || 'Normal')})</div>` : ''}
+          ${o.invoiceNo ? `<div style="font-size:12px;color:#166534">🧾 ${esc(o.invoiceNo)}</div>` : ''}
+        </td>
+        <td style="display:flex;gap:5px;flex-wrap:wrap">
+          <button class="btn btn-light" onclick="openDetail('${esc(o.id)}')">👁️ View</button>
+          ${isNew ? `<button class="btn btn-green" onclick="openRelease('${esc(o.id)}','release')">▶ Release</button>` : ''}
+          ${isNew && o.items.length > 0 ? `<button class="btn btn-amber" onclick="openSplit('${esc(o.id)}')">✂️ Split</button>` : ''}
+          ${canReassign ? `<button class="btn btn-blue" onclick="openRelease('${esc(o.id)}','reassign')">🔄 Reassign</button>` : ''}
+          ${canCancel ? `<button class="btn btn-red" onclick="doCancel('${esc(o.id)}')">✕ Cancel</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  $('btnApplyFilter').onclick = refreshAll;
+  $('fStatus').onchange = renderOrdersTable;
+  $('fSearch').oninput = renderOrdersTable;
+
+  // Release / Reassign Modal
+  window.openRelease = async (oid, mode) => {
+    ACTIVE_ORDER = ALL_ORDERS.find((o) => o.id === oid);
+    if (!ACTIVE_ORDER) return;
+    RELEASE_MODE = mode;
+    $('relModalTitle').textContent = (mode === 'release' ? 'Release Order to Warehouse: ' : 'Reassign Order: ') + oid;
+
+    const eligible = USERS.filter((u) => u.active && (u.role.includes('employee') || u.role.includes('salesperson') || u.role.includes('admin')));
+    $('relEmployeeSel').innerHTML = eligible.map((u) => `<option value="${esc(u.userId)}" data-name="${esc(u.name)}">${esc(u.name)} (${esc(u.shortCode)}) — ${esc(u.role)}</option>`).join('');
+
+    // Check Available Stock & Warn (Never Block)
+    $('relStockWarn').style.display = 'none';
+    try {
+      if (!LIVE_STOCK.length) {
+        const sRes = await AnilAdminApi.stockFeed();
+        if (sRes.ok && sRes.items) LIVE_STOCK = sRes.items;
+      }
+      const shortMsgs = [];
+      ACTIVE_ORDER.items.forEach((it) => {
+        const match = LIVE_STOCK.find((r) => (it.Barcode && r[2] === it.Barcode) || r[0].toLowerCase() === it.ItemName.toLowerCase());
+        const avail = match ? Number(match[6]) : 0;
+        if (it.Qty > avail) shortMsgs.push(`${it.ItemName}: Ordered ${it.Qty}, Available ${avail}`);
+      });
+      if (shortMsgs.length) {
+        $('relStockWarn').style.display = 'block';
+        $('relStockWarn').innerHTML = `⚠️ <b>Low Available Stock Warning (Release still allowed):</b><br>` + shortMsgs.map(esc).join('<br>');
+      }
+    } catch (e) {}
+
+    $('releaseModal').classList.add('open');
+  };
+
+  $('btnConfirmRelease').onclick = async () => {
+    if (!ACTIVE_ORDER) return;
+    const sel = $('relEmployeeSel');
+    const empId = sel.value;
+    const empName = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].dataset.name : empId;
+    const prio = $('relPrioritySel').value;
+    const due = $('relDueInp').value.trim();
+    const res = RELEASE_MODE === 'release'
+      ? await AnilAdminApi.releaseOrder(ACTIVE_ORDER.id, empId, empName, prio, due)
+      : await AnilAdminApi.reassign(ACTIVE_ORDER.id, empId, empName, prio, due);
+    if (!res.ok) { alert(res.message); return; }
+    closeModals();
+    refreshAll();
+  };
+
+  // Split Order Modal
+  window.openSplit = (oid) => {
+    ACTIVE_ORDER = ALL_ORDERS.find((o) => o.id === oid);
+    if (!ACTIVE_ORDER) return;
+    $('splitModalTitle').textContent = `Split Order ${oid} (${ACTIVE_ORDER.partyName})`;
+    $('splitItemsList').innerHTML = ACTIVE_ORDER.items.map((it, idx) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);gap:10px">
+        <div style="flex:1"><b>${esc(it.ItemName)}</b><br><small>Total Ordered: ${it.Qty} ${esc(it.Pack)}</small></div>
+        <div>
+          <label style="font-size:11px;font-weight:800">Qty for -A:</label>
+          <input type="number" class="inp split-qty-a" data-idx="${idx}" value="${it.Qty}" min="0" max="${it.Qty}" style="width:90px">
+        </div>
+      </div>`).join('');
+    $('splitModal').classList.add('open');
+  };
+
+  $('btnConfirmSplit').onclick = async () => {
+    if (!ACTIVE_ORDER) return;
+    const itemsA = [], itemsB = [];
+    document.querySelectorAll('.split-qty-a').forEach((inp) => {
+      const idx = Number(inp.dataset.idx);
+      const orig = ACTIVE_ORDER.items[idx];
+      const qA = Math.max(0, Math.min(orig.Qty, Number(inp.value) || 0));
+      const qB = orig.Qty - qA;
+      if (qA > 0) itemsA.push(Object.assign({}, orig, { Qty: qA }));
+      if (qB > 0) itemsB.push(Object.assign({}, orig, { Qty: qB }));
+    });
+    if (!itemsA.length || !itemsB.length) {
+      alert('Both -A and -B child orders must have at least 1 item quantity.');
+      return;
+    }
+    const res = await AnilAdminApi.splitOrder(ACTIVE_ORDER.id, [
+      { suffix: 'A', items: itemsA },
+      { suffix: 'B', items: itemsB }
+    ]);
+    if (!res.ok) { alert(res.message); return; }
+    closeModals();
+    refreshAll();
+  };
+
+  window.doCancel = async (oid) => {
+    const reason = prompt('Enter cancellation reason for ' + oid + ':');
+    if (reason === null) return;
+    const res = await AnilAdminApi.cancelOrder(oid, reason || 'Cancelled by office');
+    if (!res.ok) { alert(res.message); return; }
+    refreshAll();
+  };
+
+  // Order Detail & Timeline
+  window.openDetail = async (oid) => {
+    const o = ALL_ORDERS.find((x) => x.id === oid);
+    if (!o) return;
+    $('detTitle').textContent = `${o.id} — ${o.partyName}`;
+    $('detBody').innerHTML = `
+      <p style="margin-bottom:10px"><b>Route:</b> ${esc(o.route || '-')} · <b>Salesman:</b> ${esc(o.salesman)} · <b>Status:</b> ${esc(o.status)}</p>
+      <table><thead><tr><th>Item</th><th>Ordered</th><th>Fulfilled</th><th>Short</th><th>Rate</th><th>Result</th></tr></thead>
+      <tbody>
+        ${o.items.map((it, idx) => {
+          const ti = (o.taskItems || []).find((x) => x.ItemName === it.ItemName) || {};
+          const ful = ti.fulfilledQty != null ? ti.fulfilledQty : it.Qty;
+          const shrt = ti.shortQty != null ? ti.shortQty : 0;
+          return `<tr><td>${esc(it.ItemName)}</td><td>${it.Qty}</td><td><b>${ful}</b></td><td style="color:${shrt > 0 ? 'red' : 'inherit'}">${shrt}</td><td>₹${it.Rate}</td><td>${esc(ti.resultStatus || '-')} ${esc(ti.reason || '')}</td></tr>`;
+        }).join('')}
+      </tbody></table>
+      <h4 style="margin:14px 0 6px;color:var(--green-dark)">📜 Audit Timeline</h4>
+      <div id="timelineBox">Loading events…</div>`;
+    $('detailModal').classList.add('open');
+    const evRes = await AnilAdminApi.orderEvents(oid);
+    $('timelineBox').innerHTML = (evRes.events || []).map((ev) => `
+      <div style="padding:6px 0;border-bottom:1px dashed var(--border);font-size:13px">
+        <b>${esc(ev.action)}</b> (${esc(ev.fromStatus)} → <b>${esc(ev.toStatus)}</b>) by <b>${esc(ev.user)}</b>
+        <span style="color:var(--muted)"> · ${new Date(ev.timestamp).toLocaleString('en-IN')}</span>
+        ${ev.details ? `<div style="color:#334155">${esc(ev.details)}</div>` : ''}
+      </div>`).join('') || '<p>No events recorded.</p>';
+  };
+
+  // Billing, Dispatch & Delivery Queue
+  function renderBillingQueue() {
+    const qOrders = ALL_ORDERS.filter((o) => ['Ready for Billing', 'Billed', 'Dispatched'].includes(o.status));
+    if (!qOrders.length) {
+      $('billingList').innerHTML = '<p style="color:var(--muted)">No orders currently in Billing / Dispatch queue.</p>';
+      return;
+    }
+    $('billingList').innerHTML = qOrders.map((o) => {
+      const hasShort = (o.taskItems || []).some((t) => t.shortQty > 0);
+      return `<div class="panel" style="border-left:6px solid var(--green)">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <div>
+            <b style="font-size:16px">${esc(o.id)} — ${esc(o.partyName)}</b> (${esc(o.route || '-')})
+            <span class="badge st-${o.status.replace(/\s+/g, '')}" style="margin-left:8px">${esc(o.status)}</span>
+          </div>
+          <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap">
+            ${o.status === 'Ready for Billing' ? `<button class="btn btn-green" onclick="markBilled('${esc(o.id)}')">🧾 Mark Billed</button>` : ''}
+            ${o.status === 'Billed' ? `<button class="btn btn-blue" onclick="markDispatched('${esc(o.id)}')">🚚 Mark Dispatched</button>` : ''}
+            ${o.status === 'Dispatched' ? `<button class="btn btn-green" onclick="markDelivered('${esc(o.id)}')">✅ Mark Delivered</button>` : ''}
+            ${hasShort ? `<button class="btn btn-amber" onclick="handleShortage('${esc(o.id)}','backorder')">➕ Shortages → New Order</button>` : ''}
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Item</th><th>Mfg</th><th>Barcode</th><th>Ordered</th><th>Fulfilled (Bill This)</th><th>Shortage</th><th>Rate</th></tr></thead>
+          <tbody>
+            ${o.items.map((it) => {
+              const ti = (o.taskItems || []).find((x) => x.ItemName === it.ItemName) || {};
+              const ful = ti.fulfilledQty != null ? ti.fulfilledQty : it.Qty;
+              const shrt = ti.shortQty != null ? ti.shortQty : 0;
+              return `<tr><td>${esc(it.ItemName)}</td><td>${esc(it.MfgCode)}</td><td>${esc(it.Barcode)}</td><td>${it.Qty}</td><td><b>${ful}</b></td><td style="color:${shrt > 0 ? '#dc2626' : '#64748b'};font-weight:800">${shrt}</td><td>₹${it.Rate}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    }).join('');
+  }
+
+  window.markBilled = async (oid) => {
+    const inv = prompt('Enter External Billing Software Invoice No for ' + oid + ':');
+    if (!inv) return;
+    const res = await AnilAdminApi.setStatus([oid], 'Billed', { invoiceNo: inv });
+    if (!res.ok) { alert(res.message); return; }
+    refreshAll();
+  };
+
+  window.markDispatched = async (oid) => {
+    const tr = prompt('Optional Transport / Tempo / LR Note for ' + oid + ':') || '';
+    const res = await AnilAdminApi.setStatus([oid], 'Dispatched', { transportNote: tr });
+    if (!res.ok) { alert(res.message); return; }
+    refreshAll();
+  };
+
+  window.markDelivered = async (oid) => {
+    const res = await AnilAdminApi.setStatus([oid], 'Delivered', {});
+    if (!res.ok) { alert(res.message); return; }
+    refreshAll();
+  };
+
+  window.handleShortage = async (oid, mode) => {
+    if (!confirm('Create a new pending order for all short items in ' + oid + '?')) return;
+    const res = await AnilAdminApi.resolveShortage(oid, mode);
+    if (!res.ok) { alert(res.message); return; }
+    alert('Created backorder: ' + res.backorderId);
+    refreshAll();
+  };
+
+  $('btnExportBillingExcel').onclick = () => {
+    const qOrders = ALL_ORDERS.filter((o) => o.status === 'Ready for Billing');
+    if (!qOrders.length) { alert('No orders in Ready for Billing queue.'); return; }
+    const rows = [];
+    qOrders.forEach((o) => {
+      o.items.forEach((it) => {
+        const ti = (o.taskItems || []).find((x) => x.ItemName === it.ItemName) || {};
+        const ful = ti.fulfilledQty != null ? ti.fulfilledQty : it.Qty;
+        rows.push({
+          OrderID: o.id, Date: o.date, PartyName: o.partyName, Route: o.route,
+          ItemName: it.ItemName, MfgCode: it.MfgCode, Barcode: it.Barcode,
+          OrderedQty: it.Qty, FulfilledQty: ful, ShortQty: it.Qty - ful, Rate: it.Rate, BillAmount: ful * it.Rate
+        });
+      });
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'ReadyForBilling');
+    XLSX.writeFile(wb, 'AnilPlastics_ReadyForBilling.xlsx');
+  };
+
+  // Daily Stock Import (Preview + Validation)
+  $('stockFileInp').onchange = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const buf = await f.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+    if (!rows.length) { alert('File is empty'); return; }
+
+    // Normalize columns to standard schema
+    const norm = rows.map((r) => ({
+      ItemName: String(r.ItemName || r['Item Name'] || r.Item || r.Product || '').trim(),
+      MfgCode: String(r.MfgCode || r.Mfg || r.Company || '').trim(),
+      Barcode: String(r.Barcode || r.Code || '').trim(),
+      Pack: String(r.Pack || r.Unit || 'PC').trim(),
+      Stock: parseFloat(r.Stock || r.Qty || r['Closing Stock'] || 0) || 0,
+      SaleRate: parseFloat(r.SaleRate || r.Rate || r.MRP || 0) || 0
+    })).filter((x) => x.ItemName);
+
+    PENDING_STOCK_CSV = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(norm));
+    PENDING_STOCK_NAME = f.name;
+    PENDING_STOCK_COUNT = norm.length;
+    $('btnConfirmStockUpload').style.display = 'inline-flex';
+    $('stockPreviewBox').innerHTML = `
+      <div class="warn-box" style="background:#dcfce7;border-color:#16a34a;color:#14532d">
+        ✓ Validated <b>${norm.length}</b> items from <b>${esc(f.name)}</b>. Preview of first 5 rows below — click "Confirm & Upload to Cloud" to publish.
+      </div>
+      <table><thead><tr><th>ItemName</th><th>MfgCode</th><th>Barcode</th><th>Pack</th><th>Stock</th><th>SaleRate</th></tr></thead>
+      <tbody>${norm.slice(0, 5).map((r) => `<tr><td>${esc(r.ItemName)}</td><td>${esc(r.MfgCode)}</td><td>${esc(r.Barcode)}</td><td>${esc(r.Pack)}</td><td>${r.Stock}</td><td>${r.SaleRate}</td></tr>`).join('')}</tbody></table>`;
+  };
+
+  $('btnConfirmStockUpload').onclick = async () => {
+    if (!PENDING_STOCK_CSV) return;
+    $('btnConfirmStockUpload').disabled = true;
+    const res = await AnilAdminApi.uploadStock(PENDING_STOCK_CSV, PENDING_STOCK_NAME, PENDING_STOCK_COUNT);
+    $('btnConfirmStockUpload').disabled = false;
+    if (!res.ok) { alert(res.message); return; }
+    alert('Stock uploaded successfully!');
+    $('btnConfirmStockUpload').style.display = 'none';
+    loadLiveStock();
+  };
+
+  async function loadLiveStock() {
+    const res = await AnilAdminApi.stockFeed();
+    if (res.ok && res.items) {
+      LIVE_STOCK = res.items;
+      renderLiveStockTable();
+    }
+  }
+
+  function renderLiveStockTable() {
+    const q = $('stockSearchInp').value.toLowerCase().trim();
+    const list = LIVE_STOCK.filter((r) => !q || `${r[0]} ${r[1]} ${r[2]}`.toLowerCase().includes(q)).slice(0, 200);
+    $('liveStockTbody').innerHTML = list.map((r) => `
+      <tr>
+        <td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td>
+        <td>${r[4]}</td><td style="color:#b45309;font-weight:800">${r[5]}</td>
+        <td style="color:${r[6] > 0 ? '#166534' : '#dc2626'};font-weight:900">${r[6]}</td><td>₹${r[7]}</td>
+      </tr>`).join('');
+  }
+  $('stockSearchInp').oninput = renderLiveStockTable;
+
+  // Users Management
+  async function loadUsers() {
+    const res = await AnilAdminApi.getUsers();
+    if (res.ok) { USERS = res.users || []; renderUsersTable(); }
+  }
+
+  function renderUsersTable() {
+    $('usersTbody').innerHTML = USERS.map((u) => `
+      <tr>
+        <td>${esc(u.userId)}</td><td><b>${esc(u.name)}</b></td><td><b>${esc(u.shortCode)}</b></td>
+        <td>${esc(u.phone)}</td><td>${esc(u.role)}</td><td>${u.active ? '🟢 Yes' : '🔴 No'}</td>
+        <td><button class="btn btn-light" onclick="editUserRow('${esc(u.userId)}')">✎ Edit</button></td>
+      </tr>`).join('');
+  }
+
+  window.editUserRow = (uid) => {
+    const u = USERS.find((x) => x.userId === uid);
+    if (!u) return;
+    $('uName').value = u.name;
+    $('uCode').value = u.shortCode;
+    $('uPhone').value = u.phone;
+    $('uRole').value = u.role;
+    $('uActive').value = String(u.active);
+    $('uPin').value = '';
+  };
+
+  $('btnSaveUser').onclick = async () => {
+    const payload = {
+      name: $('uName').value.trim(),
+      shortCode: $('uCode').value.trim(),
+      phone: $('uPhone').value.trim(),
+      role: $('uRole').value,
+      pin: $('uPin').value.trim(),
+      active: $('uActive').value === 'true'
+    };
+    const res = await AnilAdminApi.saveUser(payload);
+    if (!res.ok) { alert(res.message); return; }
+    $('uName').value = ''; $('uCode').value = ''; $('uPhone').value = ''; $('uPin').value = '';
+    loadUsers();
+  };
+
+  $('btnArchiveOld').onclick = async () => {
+    if (!confirm('Move orders older than 90 days into the Archive tab?')) return;
+    const res = await AnilAdminApi.archiveOld(90);
+    alert(`Archived ${res.movedRows || 0} row(s).`);
+    refreshAll();
+  };
+
+  $('btnAdmLogout').onclick = () => {
+    AnilAdminApi.setConfig(undefined, null);
+    checkAuth();
+  };
+
+  $('btnRefreshNow').onclick = refreshAll;
+
+  // Boot + 20-second light polling
+  if (checkAuth()) {
+    refreshAll();
+  }
+  setInterval(() => {
+    if (AnilAdminApi.getConfig().token && !document.hidden) refreshAll();
+  }, 20000);
+})();
+</script>
+</body>
+</html>

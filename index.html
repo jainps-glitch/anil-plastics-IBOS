@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#277e56">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Anil Plastics">
+<title>Anil Plastics - Order &amp; Tasks (Ver 08)</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body, input, select, button, textarea {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  :root {
+    --brand-green: #277e56;
+    --brand-green-dark: #1b5e3f;
+    --brand-green-light: #dcf2e6;
+    --bg-page: #f2f7f4;
+    --text-dark: #111d16;
+    --text-muted: #455a4d;
+    --line: #cde0d5;
+    --accent: #ffeb3b;
+    --danger: #b91c1c;
+    --blue: #0284c7;
+    --amber: #b45309;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  body { background: var(--bg-page); color: var(--text-dark); overflow-x: hidden; min-height: 100vh; font-size: 16px; }
+  button { cursor: pointer; font: inherit; touch-action: manipulation; }
+  button:disabled { opacity: .55; cursor: default; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; }
+
+  /* Sticky Top Header + Navigation */
+  .app-top { position: sticky; top: 0; z-index: 100; }
+  .brand-header {
+    background: linear-gradient(135deg, #eaf7f0 0%, #d2edde 50%, #bfe4d0 100%);
+    padding: 8px 12px 6px; padding-top: max(8px, env(safe-area-inset-top));
+    display: flex; flex-direction: column; align-items: center;
+    border-bottom: 2px solid #9fd6b8;
+  }
+  .brand-title-row { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+  .brand-wordmark { font-size: 19px; font-weight: 900; color: var(--brand-green-dark); letter-spacing: .3px; display: flex; align-items: center; gap: 6px; }
+  .brand-badge { background: var(--brand-green); color: #fff; font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: 800; }
+  .salesman-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 6px; }
+  .pill {
+    background: #fff; padding: 6px 10px; border-radius: 14px; border: 1.5px solid #9fd6b8;
+    display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 800; color: var(--brand-green-dark);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 44vw;
+  }
+  .pill.clock { font-weight: 700; color: #204e38; }
+  .net-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; display: inline-block; flex-shrink: 0; }
+  .net-dot.off { background: #dc2626; }
+  .btn-upload-header {
+    background: var(--brand-green); color: #fff; border: none; padding: 7px 12px; border-radius: 12px;
+    font-size: 13px; font-weight: 800; white-space: nowrap; min-height: 36px;
+  }
+
+  /* Primary Role Switcher Bar (shown when user has both Salesperson + Employee roles) */
+  .role-switcher {
+    display: none; background: #103b25; padding: 6px 10px; gap: 8px;
+  }
+  .role-switcher.show { display: flex; }
+  .role-btn {
+    flex: 1; padding: 10px 8px; border-radius: 8px; border: 2px solid transparent;
+    background: rgba(255,255,255,.12); color: #d1f2e0; font-size: 15px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .role-btn.active { background: var(--accent); color: #103b25; border-color: #fff; }
+
+  /* Sub-Navigation Tabs */
+  .nav-tabs { display: flex; background: var(--brand-green); box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+  .nav-tab {
+    flex: 1; text-align: center; padding: 10px 2px; color: #dcf7e8; font-size: 13px; font-weight: 700;
+    border: none; background: none; border-bottom: 4px solid transparent; line-height: 1.2; min-height: 54px;
+  }
+  .nav-tab .ic { display: block; font-size: 18px; margin-bottom: 2px; }
+  .nav-tab.active { color: #fff; border-bottom-color: var(--accent); background: var(--brand-green-dark); }
+  .tab-badge { background: var(--accent); color: #103b25; border-radius: 10px; padding: 1px 6px; font-size: 11.5px; font-weight: 900; margin-left: 3px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Login Screen Overlay */
+  .login-screen {
+    position: fixed; inset: 0; background: linear-gradient(160deg, #1b5e3f 0%, #277e56 60%, #103b25 100%);
+    z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;
+  }
+  .login-screen.open { display: flex; }
+  .login-card {
+    background: #fff; width: 100%; max-width: 420px; border-radius: 16px; padding: 24px 20px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.35);
+  }
+  .login-title { font-size: 22px; font-weight: 900; color: var(--brand-green-dark); text-align: center; margin-bottom: 4px; }
+  .login-sub { font-size: 14px; color: var(--text-muted); text-align: center; margin-bottom: 18px; }
+  .login-label { display: block; font-size: 13px; font-weight: 800; color: var(--brand-green-dark); margin-bottom: 5px; text-transform: uppercase; }
+  .login-input {
+    width: 100%; padding: 13px 14px; font-size: 18px; font-weight: 700; border: 2px solid #b8dac7;
+    border-radius: 10px; margin-bottom: 14px; background: #fafffc; color: var(--text-dark);
+  }
+  .login-input:focus { border-color: var(--brand-green); background: #fff; outline: none; }
+  .btn-login {
+    width: 100%; padding: 15px; background: var(--brand-green); color: #fff; border: none;
+    border-radius: 10px; font-size: 18px; font-weight: 900; margin-top: 4px;
+  }
+
+  /* Party Form */
+  .party-header-wrapper { background: #fff; border-bottom: 1.5px solid var(--line); }
+  .party-compact-banner { display: none; padding: 12px 14px; background: #e8f5ee; justify-content: space-between; align-items: center; cursor: pointer; gap: 8px; }
+  .party-compact-info { font-size: 15px; font-weight: 800; color: var(--brand-green-dark); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .party-compact-info small { font-weight: 600; color: #3d5245; }
+  .btn-edit-party { font-size: 13px; background: #fff; color: var(--brand-green-dark); border: 2px solid var(--brand-green); padding: 6px 12px; border-radius: 14px; font-weight: 800; white-space: nowrap; }
+  .order-form-card { padding: 14px; }
+  .form-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .form-group { flex: 1; min-width: 0; }
+  .form-group label { display: block; font-size: 12px; font-weight: 800; color: var(--brand-green-dark); margin-bottom: 4px; text-transform: uppercase; }
+  .form-control {
+    width: 100%; padding: 11px 12px; font-size: 16px; font-weight: 600; border: 1.5px solid #a8d0ba; border-radius: 8px; outline: none; background: #fafffc; color: var(--text-dark);
+  }
+  .form-control:focus { border-color: var(--brand-green); background: #fff; }
+  .btn-primary-wide { width: 100%; background: var(--brand-green); color: #fff; border: none; padding: 13px; font-size: 16px; font-weight: 800; border-radius: 8px; margin-top: 4px; }
+  .editing-banner { display: none; background: #fef3c7; color: #92400e; font-size: 14px; font-weight: 800; padding: 10px 14px; border-bottom: 2px solid #f59e0b; justify-content: space-between; align-items: center; gap: 8px; }
+  .editing-banner.show { display: flex; }
+  .editing-banner button { background: #fff; border: 2px solid #f59e0b; color: #92400e; border-radius: 12px; padding: 5px 12px; font-size: 13px; font-weight: 800; }
+
+  /* Search & Filters */
+  .search-container { background: var(--brand-green); padding: 10px 12px; }
+  .search-box { background: #fff; border-radius: 8px; display: flex; align-items: center; padding: 8px 12px; gap: 8px; border: 2px solid transparent; }
+  .search-box:focus-within { border-color: var(--accent); }
+  .search-box svg { width: 20px; height: 20px; fill: #444; flex-shrink: 0; }
+  .search-input { width: 100%; border: none; outline: none; font-size: 17px; font-weight: 600; color: #111; background: transparent; padding: 3px 0; }
+  .search-clear { border: none; background: #e2ebe6; color: #111; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: 800; display: none; flex-shrink: 0; }
+  .search-clear.show { display: inline-block; }
+  .filter-bar { background: #fff; border-bottom: 1.5px solid var(--line); padding: 8px 12px; }
+  .mfg-filter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .mfg-filter-label { font-size: 12.5px; font-weight: 800; color: var(--brand-green-dark); white-space: nowrap; text-transform: uppercase; }
+  .mfg-select { flex: 1; min-width: 0; padding: 9px 10px; font-size: 15px; font-weight: 700; border: 1.5px solid #a8d0ba; border-radius: 8px; background: #fafffc; color: var(--brand-green-dark); }
+  .chip-container { display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; padding-bottom: 2px; }
+  .chip-container::-webkit-scrollbar { display: none; }
+  .chip { padding: 8px 14px; border-radius: 18px; font-size: 14px; font-weight: 700; background: #eef6f1; color: #243b2d; border: 1.5px solid #b8d8c6; flex-shrink: 0; }
+  .chip.active { background: var(--brand-green); color: #fff; border-color: var(--brand-green); }
+  .result-meta { font-size: 13px; font-weight: 600; color: var(--text-muted); padding: 7px 14px; background: #f7fbf8; border-bottom: 1px solid var(--line); }
+
+  /* Item Cards */
+  .item-list { list-style: none; padding-bottom: calc(108px + var(--safe-bottom)); }
+  .item-card { background: #fff; padding: 13px 14px; border-bottom: 1.5px solid #dcebe2; cursor: pointer; }
+  .item-card:active { background: #eef8f2; }
+  .item-card.in-cart { background: #e8f8ef; border-left: 6px solid var(--brand-green); }
+  .item-card.modified { border-left: 6px solid #f59e0b; }
+  .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 8px; }
+  .item-name { font-size: 16.5px; font-weight: 800; color: #112419; line-height: 1.3; word-break: break-word; }
+  .badge-tag { font-size: 13px; padding: 5px 10px; border-radius: 6px; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .tag-count { background: #e0f2fe; color: #0369a1; }
+  .tag-cart { background: var(--brand-green); color: #fff; }
+  .item-details { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 10px; font-size: 14px; color: var(--text-muted); font-weight: 600; }
+  .mfg-pill { background: #e2f3e9; color: var(--brand-green-dark); padding: 2px 7px; border-radius: 4px; font-weight: 800; }
+  .val-highlight { color: #12261a; font-weight: 800; }
+  .val-zero { color: #dc2626; font-weight: 800; }
+  .item-note { font-size: 13px; color: var(--brand-green-dark); margin-top: 4px; font-weight: 700; }
+  .btn-more { display: block; width: calc(100% - 28px); margin: 14px; padding: 14px; border-radius: 8px; border: 2px dashed var(--brand-green); background: #fff; color: var(--brand-green-dark); font-weight: 800; font-size: 15px; }
+
+  /* Floating Cart Bar */
+  .cart-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--brand-green-dark); color: #fff;
+    padding: 12px 14px; padding-bottom: calc(12px + var(--safe-bottom));
+    display: flex; justify-content: space-between; align-items: center; z-index: 100; box-shadow: 0 -3px 12px rgba(0,0,0,.25); gap: 10px;
+  }
+  .cart-total { font-size: 20px; font-weight: 900; color: var(--accent); }
+  .cart-actions { display: flex; gap: 8px; }
+  .btn-review { background: var(--accent); color: #103b25; border: none; padding: 12px 18px; border-radius: 8px; font-weight: 900; font-size: 16px; }
+  .btn-ghost-light { background: transparent; color: #e2f7ec; border: 1.5px solid #68b592; padding: 12px 12px; border-radius: 8px; font-size: 14px; font-weight: 700; }
+
+  /* Toolbars & Buttons */
+  .toolbar { background: #fff; padding: 14px; border-bottom: 1.5px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .toolbar-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .toolbar-title { font-size: 16px; font-weight: 800; color: var(--brand-green-dark); }
+  .hint { font-size: 13px; color: var(--text-muted); line-height: 1.45; }
+  .btn-sm { padding: 10px 14px; border-radius: 8px; font-size: 14px; font-weight: 800; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; min-height: 42px; }
+  .btn-green { background: var(--brand-green); color: #fff; }
+  .btn-wa { background: #1ea952; color: #fff; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-amber { background: #d97706; color: #fff; }
+  .btn-light { background: #e8f5ee; color: var(--brand-green-dark); border: 1.5px solid #b2dec7; }
+  .btn-danger-soft { background: #fee2e2; color: var(--danger); border: 1.5px solid #fca5a5; }
+  .btn-wide { width: 100%; padding: 14px; font-size: 16px; font-weight: 800; border-radius: 8px; min-height: 48px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Order Cards + Workflow Status Badges */
+  .summary-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat { background: #f2f9f5; border: 1.5px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .stat b { display: block; font-size: 18px; color: var(--brand-green-dark); }
+  .stat span { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; }
+
+  .order-card { background: #fff; margin: 12px; border-radius: 10px; border: 1.5px solid #c3dccd; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+  .order-card.pending { border-left: 6px solid #f59e0b; }
+  .order-card.synced { border-left: 6px solid var(--blue); }
+  .order-card.locked { border-left: 6px solid var(--brand-green); }
+  .order-card-header { background: #eaf6ef; padding: 12px 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; border-bottom: 1px solid #c2e0cf; }
+  .party-name { font-size: 16.5px; font-weight: 800; color: var(--brand-green-dark); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .sync-tag { font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 6px; }
+  .sync-tag.ok { background: #e0f2fe; color: #0369a1; }
+  .sync-tag.wait { background: #fef3c7; color: #b45309; }
+  .wf-badge { font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: #e2e8f0; color: #1e293b; }
+  .wf-New { background: #dbeafe; color: #1e40af; }
+  .wf-Released { background: #fef3c7; color: #92400e; }
+  .wf-InProgress { background: #ffedd5; color: #9a3412; }
+  .wf-ReadyforBilling { background: #f3e8ff; color: #6b21a8; }
+  .wf-Billed, .wf-Dispatched, .wf-Delivered { background: #dcfce7; color: #166534; }
+  .wf-Cancelled { background: #fee2e2; color: #991b1b; }
+
+  .order-sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
+  .order-card-body { padding: 12px 14px; font-size: 14px; color: #2b3d32; line-height: 1.55; }
+  .order-card-footer { padding: 10px 12px; background: #f7fbf8; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; border-top: 1px solid #e2ede6; }
+
+  /* ================= MY TASKS (WAREHOUSE EXECUTION) ================= */
+  .task-card {
+    background: #fff; margin: 12px; border-radius: 12px; border: 2px solid #b8d8c6;
+    padding: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.06);
+  }
+  .task-card.urgent { border-color: #dc2626; border-left-width: 8px; }
+  .task-card.high { border-color: #d97706; border-left-width: 8px; }
+  .task-card.inprog { border-color: var(--blue); border-left-width: 8px; background: #f0f9ff; }
+  .task-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .task-party { font-size: 19px; font-weight: 900; color: var(--brand-green-dark); }
+  .prio-pill { font-size: 12px; font-weight: 900; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; }
+  .prio-Urgent { background: #fee2e2; color: #b91c1c; }
+  .prio-High { background: #fef3c7; color: #b45309; }
+  .prio-Normal { background: #e0f2fe; color: #0369a1; }
+
+  .task-exec-panel { display: none; padding-bottom: 100px; }
+  .task-exec-panel.open { display: block; }
+  .task-exec-top { background: #103b25; color: #fff; padding: 14px; }
+  .task-exec-top h2 { font-size: 20px; font-weight: 900; color: var(--accent); margin-bottom: 4px; }
+  .task-item-box {
+    background: #fff; margin: 12px; border-radius: 12px; border: 2px solid #cde0d5; padding: 14px;
+  }
+  .task-item-box.st-Done { border-color: #16a34a; background: #f0fdf4; }
+  .task-item-box.st-NotAvailable { border-color: #dc2626; background: #fef2f2; }
+  .task-item-box.st-Partial { border-color: #d97706; background: #fffbeb; }
+  .task-item-title { font-size: 17px; font-weight: 900; color: #111; margin-bottom: 6px; }
+  .task-item-meta { font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .task-qty-big { font-size: 18px; font-weight: 900; color: var(--brand-green-dark); background: #dcf2e6; padding: 4px 10px; border-radius: 8px; }
+  .task-action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .btn-task-act {
+    padding: 13px 6px; border-radius: 10px; border: 2px solid #cbd5e1; background: #f8fafc;
+    font-size: 14px; font-weight: 900; color: #1e293b; text-align: center;
+  }
+  .btn-task-act.sel-done { background: #16a34a; color: #fff; border-color: #15803d; }
+  .btn-task-act.sel-na { background: #dc2626; color: #fff; border-color: #b91c1c; }
+  .btn-task-act.sel-part { background: #d97706; color: #fff; border-color: #b45309; }
+  .partial-box { display: none; margin-top: 10px; padding: 10px; background: #fff; border-radius: 8px; border: 1.5px solid #f59e0b; }
+  .partial-box.show { display: block; }
+
+  /* Settings & Catalogues */
+  .catalog-card { background: #fff; margin: 12px; border-radius: 10px; border: 1.5px solid #cee0d5; padding: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .catalog-title { font-size: 16px; font-weight: 800; color: var(--brand-green-dark); margin-bottom: 3px; }
+  .settings-card { background: #fff; margin: 12px; padding: 16px; border-radius: 10px; border: 1.5px solid #cee0d5; }
+  .settings-title { font-size: 17px; font-weight: 900; color: var(--brand-green-dark); margin-bottom: 12px; border-bottom: 2px solid var(--brand-green-light); padding-bottom: 6px; }
+  .settings-block { margin-bottom: 16px; }
+  .inline-row { display: flex; gap: 8px; }
+  .danger-zone { margin-top: 6px; padding: 14px; border: 2px dashed #ef4444; border-radius: 8px; background: #fef2f2; }
+  .empty-state { text-align: center; padding: 44px 20px; color: #556b5d; font-size: 16px; font-weight: 600; line-height: 1.6; }
+  .app-footer { text-align: center; font-size: 12px; color: #6c8577; padding: 8px 0 28px; }
+
+  /* Modals */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 500; align-items: flex-end; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  @media (min-width: 600px) { .modal-overlay { align-items: center; padding: 16px; } }
+  .modal { background: #fff; border-radius: 16px 16px 0 0; width: 100%; max-width: 460px; padding: 20px 16px; padding-bottom: calc(18px + var(--safe-bottom)); max-height: 92vh; overflow-y: auto; }
+  @media (min-width: 600px) { .modal { border-radius: 14px; } }
+  .modal-title { font-size: 18px; font-weight: 900; color: var(--brand-green-dark); margin-bottom: 10px; line-height: 1.3; }
+  .modal-row { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 14.5px; color: #3d5245; flex-wrap: wrap; }
+  .modal-buttons { display: flex; gap: 8px; margin-top: 14px; }
+  .btn-modal { flex: 1; padding: 14px 10px; border: none; border-radius: 8px; font-size: 16px; font-weight: 800; }
+  .btn-modal-save { background: var(--brand-green); color: #fff; }
+  .btn-modal-cancel { background: #e2e8e4; color: #222; }
+  .btn-modal-delete { background: #ef4444; color: #fff; }
+  .qty-stepper { display: flex; align-items: stretch; gap: 8px; }
+  .qty-stepper button { width: 54px; border: 2px solid #9fd6b8; background: #e8f5ee; color: var(--brand-green-dark); font-size: 24px; font-weight: 900; border-radius: 8px; }
+  .qty-stepper input { text-align: center; font-size: 22px; font-weight: 900; color: var(--brand-green-dark); }
+  .quick-qty { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .quick-qty button { flex: 1; min-width: 48px; padding: 9px 0; border-radius: 16px; border: 1.5px solid #b2dec7; background: #f0f7f3; color: #1b5e3f; font-size: 14px; font-weight: 800; }
+  .line-amount { font-size: 15px; color: var(--text-muted); margin-top: 10px; display: flex; justify-content: space-between; font-weight: 700; }
+  .line-amount b { color: var(--brand-green-dark); font-size: 18px; }
+  .stock-warn { display: none; font-size: 13.5px; font-weight: 700; color: #92400e; background: #fef3c7; padding: 8px 10px; border-radius: 6px; margin-top: 8px; border: 1px solid #f59e0b; }
+  .stock-warn.show { display: block; }
+  .rev-line { padding: 9px 0; border-bottom: 1px dashed #cde0d5; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  .rev-line .meta { color: var(--text-muted); font-size: 13px; }
+  .rev-line .amt { font-weight: 800; color: var(--brand-green-dark); white-space: nowrap; }
+  .rev-del { border: none; background: #fee2e2; color: var(--danger); width: 32px; height: 32px; border-radius: 50%; font-size: 15px; font-weight: 800; flex-shrink: 0; }
+  .rev-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; color: var(--brand-green-dark); padding: 10px 0; border-top: 2px solid #ccc; }
+
+  /* Toast */
+  .toast-wrap { position: fixed; left: 0; right: 0; bottom: calc(90px + var(--safe-bottom)); display: flex; justify-content: center; z-index: 950; pointer-events: none; padding: 0 16px; }
+  .toast { background: #111827; color: #fff; padding: 12px 18px; border-radius: 24px; font-size: 15px; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,.35); opacity: 0; transform: translateY(10px); transition: opacity .2s, transform .2s; max-width: 480px; text-align: center; }
+  .toast.show { opacity: 1; transform: none; }
+  .toast.err { background: #b91c1c; }
+
+  /* PDF Viewer */
+  .pdf-modal-overlay { display: none; position: fixed; inset: 0; background: #030712; z-index: 400; flex-direction: column; }
+  .pdf-modal-overlay.open { display: flex; }
+  .pdf-unified-bar { background: #111827; color: #fff; padding: 8px; padding-top: max(8px, env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1f2937; gap: 4px; }
+  .pdf-group { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .btn-pdf-icon { background: #1f2937; color: #f3f4f6; border: 1px solid #374151; min-width: 38px; height: 38px; padding: 0 8px; border-radius: 6px; font-size: 15px; font-weight: 800; }
+  .btn-pdf-close { background: #dc2626; color: #fff; border: none; width: 38px; height: 38px; border-radius: 6px; font-size: 16px; font-weight: 800; }
+  .pdf-viewport-scroll { flex: 1; overflow: auto; padding: 8px 6px 80px; -webkit-overflow-scrolling: touch; position: relative; text-align: center; }
+  #pdfCanvas { background: #fff; max-width: 100%; height: auto; box-shadow: 0 4px 20px rgba(0,0,0,.8); }
+  .pdf-loading { color: #cbd5e1; font-size: 16px; padding: 40px; display: none; }
+  .pdf-loading.show { display: block; }
+  .hidden-input { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN SCREEN (First Run / Session Expired) ================= -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-title">ANIL PLASTICS</div>
+    <div class="login-sub">Sign in with your Name &amp; PIN</div>
+    <label class="login-label" for="loginName">Your Name or Short Code</label>
+    <input type="text" id="loginName" class="login-input" placeholder="e.g. Rajesh or RAJ" autocomplete="username">
+    <label class="login-label" for="loginPin">4-6 Digit PIN</label>
+    <input type="password" id="loginPin" class="login-input" placeholder="••••" inputmode="numeric" maxlength="6" autocomplete="current-password">
+    <details style="margin-bottom:14px">
+      <summary style="font-size:13px;font-weight:700;color:var(--brand-green-dark);cursor:pointer">⚙️ Server Connection Link (first time)</summary>
+      <input type="url" id="loginServerUrl" class="login-input" style="font-size:13px;margin-top:8px;margin-bottom:0" placeholder="https://script.google.com/macros/s/.../exec">
+    </details>
+    <button type="button" class="btn-login" id="btnDoLogin">🔓 Sign In</button>
+    <div id="loginMsg" style="color:#b91c1c;font-size:14px;font-weight:700;margin-top:10px;text-align:center"></div>
+  </div>
+</div>
+
+<!-- ================= STICKY HEADER & ROLE TABS ================= -->
+<div class="app-top">
+  <div class="brand-header">
+    <div class="brand-title-row">
+      <div class="brand-wordmark">ANIL PLASTICS <span class="brand-badge">Ver 08</span></div>
+      <button class="btn-upload-header" id="btnTopSyncStock">🔄 Stock</button>
+    </div>
+    <div class="salesman-bar">
+      <button id="displaySalesmanName" class="pill" title="Signed in user">👤 Sign In</button>
+      <span class="pill clock"><span id="netDot" class="net-dot"></span><span id="headerLiveDateTime">--</span></span>
+    </div>
+  </div>
+
+  <!-- Dual-Role Primary Switcher (visible when user has both Salesperson & Employee roles) -->
+  <div id="roleSwitcher" class="role-switcher">
+    <button class="role-btn active" id="roleBtnBook" data-role-view="book">📝 Book Order</button>
+    <button class="role-btn" id="roleBtnTasks" data-role-view="tasks">📦 My Tasks <span class="tab-badge" id="myTasksBadge">0</span></button>
+  </div>
+
+  <!-- Salesperson Sub-Tabs -->
+  <nav class="nav-tabs" id="salesNavTabs" role="tablist">
+    <button class="nav-tab active" data-tab="order"><span class="ic">📝</span>Book</button>
+    <button class="nav-tab" data-tab="catalog"><span class="ic">📖</span>Catalogue</button>
+    <button class="nav-tab" data-tab="saved"><span class="ic">📋</span>Orders<span class="tab-badge" id="savedOrdersCount">0</span></button>
+    <button class="nav-tab" data-tab="audit"><span class="ic">🔍</span>Stock</button>
+    <button class="nav-tab" data-tab="settings"><span class="ic">⚙️</span>Setup</button>
+  </nav>
+
+  <!-- Employee Sub-Tabs -->
+  <nav class="nav-tabs" id="empNavTabs" style="display:none" role="tablist">
+    <button class="nav-tab active" data-tab="tasks"><span class="ic">📦</span>My Tasks<span class="tab-badge" id="empTasksBadge">0</span></button>
+    <button class="nav-tab" data-tab="audit"><span class="ic">🔍</span>Stock Check</button>
+    <button class="nav-tab" data-tab="settings"><span class="ic">⚙️</span>Setup</button>
+  </nav>
+</div>
+
+<!-- ================= TAB 1: BOOK ORDER ================= -->
+<section id="tabOrder" class="tab-content active">
+  <div id="editingBanner" class="editing-banner">
+    <span id="editingBannerText">Editing saved order</span>
+    <button id="btnCancelEdit">Cancel Edit</button>
+  </div>
+  <div class="party-header-wrapper">
+    <div id="partyCompactBanner" class="party-compact-banner">
+      <div class="party-compact-info">🏪 <span id="compactPartyNameDisplay"></span> <small id="compactRouteDisplay"></small></div>
+      <span class="btn-edit-party">✎ Edit Party</span>
+    </div>
+    <div id="partyFormCard" class="order-form-card">
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label for="orderPartyName">Party / Customer Name *</label>
+          <input type="text" id="orderPartyName" class="form-control" placeholder="e.g. Balaji Traders" list="partyList" autocomplete="off">
+          <datalist id="partyList"></datalist>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label for="orderRoute">Route / Area</label>
+          <input type="text" id="orderRoute" class="form-control" placeholder="e.g. Nagpur" list="routeList" autocomplete="off">
+          <datalist id="routeList"></datalist>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label for="orderNarration">Order Remarks / Scheme</label>
+        <input type="text" id="orderNarration" class="form-control" placeholder="e.g. Urgent dispatch, 10+1 scheme">
+      </div>
+      <button type="button" class="btn-primary-wide" id="btnCollapseParty">✓ Done – Show Item List</button>
+    </div>
+  </div>
+
+  <div class="search-container">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input type="search" id="orderSearchInput" class="search-input" placeholder="Search name, barcode, code…" autocomplete="off">
+      <button class="search-clear" data-clear="orderSearchInput">✕</button>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <div class="mfg-filter-row">
+      <span class="mfg-filter-label">🏷️ Mfg:</span>
+      <select id="orderMfgFilter" class="mfg-select"><option value="ALL">All Manufacturers (0)</option></select>
+    </div>
+    <div class="chip-container" id="orderChips">
+      <button class="chip active" data-filter="all">All Items</button>
+      <button class="chip" data-filter="inStock">📦 Available Stock</button>
+      <button class="chip" data-filter="inCart">🛒 In Order (<span id="chipCartCount">0</span>)</button>
+    </div>
+  </div>
+  <div class="result-meta" id="orderResultMeta">Loading items…</div>
+  <ul id="orderItemList" class="item-list"></ul>
+
+  <div class="cart-bar" id="cartBar">
+    <div>
+      <div style="font-size:13px;font-weight:700">Items: <b id="cartCount">0</b> · Qty: <b id="cartQty">0</b></div>
+      <div class="cart-total">₹ <span id="cartTotal">0.00</span></div>
+    </div>
+    <div class="cart-actions">
+      <button class="btn-ghost-light" id="btnClearCart">Clear</button>
+      <button class="btn-review" id="btnReviewOrder">Review &amp; Save</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TAB: MY TASKS (WAREHOUSE EMPLOYEE) ================= -->
+<section id="tabTasks" class="tab-content">
+  <div id="tasksListView">
+    <div class="toolbar">
+      <div class="toolbar-row">
+        <span class="toolbar-title">📦 Assigned Warehouse Orders</span>
+        <button class="btn-sm btn-blue" id="btnRefreshTasks">🔄 Refresh</button>
+      </div>
+      <div class="hint">Tap an order below to start picking items. Works offline and syncs automatically when internet returns.</div>
+    </div>
+    <div id="tasksContainer"></div>
+  </div>
+
+  <div id="taskExecView" class="task-exec-panel">
+    <div class="task-exec-top">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <button class="btn-sm btn-light" id="btnBackToTasks">← Back to Tasks</button>
+        <span id="execOrderNo" style="font-size:13px;font-weight:800;color:#a7f3d0"></span>
+      </div>
+      <h2 id="execPartyName">Party Name</h2>
+      <div id="execOrderMeta" style="font-size:13.5px;color:#d1f2e0"></div>
+    </div>
+    <div id="execItemsContainer"></div>
+    <div style="padding:14px">
+      <button class="btn-wide btn-green" id="btnCompleteTask" style="font-size:18px;padding:16px">✅ Complete &amp; Send for Billing</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TAB 2: CATALOGUES (LAZY PDF.JS) ================= -->
+<section id="tabCatalog" class="tab-content">
+  <div class="toolbar">
+    <div class="toolbar-row">
+      <span class="toolbar-title">📚 Product PDF Catalogues</span>
+      <button class="btn-sm btn-green" id="btnImportPdf">📥 Import PDF</button>
+    </div>
+    <div class="hint">Catalogues are stored offline on this phone. PDF engine loads only when you open a catalogue.</div>
+  </div>
+  <div id="cataloguesContainer"></div>
+</section>
+
+<div id="pdfViewerModal" class="pdf-modal-overlay">
+  <div class="pdf-unified-bar">
+    <span id="pdfViewerTitle" style="font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45vw">Catalogue</span>
+    <div class="pdf-group">
+      <button class="btn-pdf-icon" id="btnPdfPrev">◀</button>
+      <span id="pdfPageLabel" style="font-size:13px;font-weight:800;padding:0 6px">1 / 1</span>
+      <button class="btn-pdf-icon" id="btnPdfNext">▶</button>
+      <button class="btn-pdf-close" id="btnPdfClose">✕</button>
+    </div>
+  </div>
+  <div class="pdf-viewport-scroll">
+    <div class="pdf-loading" id="pdfLoading">Loading PDF viewer…</div>
+    <canvas id="pdfCanvas"></canvas>
+  </div>
+</div>
+
+<!-- ================= TAB 3: SAVED ORDERS ================= -->
+<section id="tabSaved" class="tab-content">
+  <div class="toolbar">
+    <div class="summary-strip">
+      <div class="stat"><b id="statToday">0</b><span>Today</span></div>
+      <div class="stat"><b id="statPending">0</b><span>Waiting Sync</span></div>
+      <div class="stat"><b id="statValue">₹0</b><span>Today Value</span></div>
+    </div>
+    <button class="btn-wide btn-blue" id="btnCloudSync">☁️ <span id="btnCloudSyncText">Sync &amp; Check Order Status</span></button>
+    <div class="grid-2">
+      <button class="btn-sm btn-wa" id="btnWaAll">WhatsApp Today</button>
+      <button class="btn-sm btn-green" id="btnExportAll">📥 Excel Export</button>
+    </div>
+    <div class="search-box" style="border:1.5px solid #b8d8c6">
+      <input type="search" id="savedSearchInput" class="search-input" placeholder="Search party, route or order no…" autocomplete="off">
+      <button class="search-clear" data-clear="savedSearchInput">✕</button>
+    </div>
+    <div class="chip-container" id="savedChips">
+      <button class="chip active" data-filter="all">All (<span id="savedCountLabel">0</span>)</button>
+      <button class="chip" data-filter="today">Today</button>
+      <button class="chip" data-filter="pending">⏳ Waiting</button>
+      <button class="chip" data-filter="synced">🟢 Synced</button>
+    </div>
+  </div>
+  <div id="savedOrdersContainer"></div>
+</section>
+
+<!-- ================= TAB 4: STOCK AUDIT ================= -->
+<section id="tabAudit" class="tab-content">
+  <div class="search-container">
+    <div class="search-box">
+      <input type="search" id="auditSearchInput" class="search-input" placeholder="Search item, barcode, code…" autocomplete="off">
+      <button class="search-clear" data-clear="auditSearchInput">✕</button>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <div class="mfg-filter-row">
+      <span class="mfg-filter-label">🏷️ Mfg:</span>
+      <select id="auditMfgFilter" class="mfg-select"><option value="ALL">All Manufacturers</option></select>
+    </div>
+    <div class="chip-container" id="auditChips">
+      <button class="chip active" data-filter="all">All Items</button>
+      <button class="chip" data-filter="inStock">📦 Available &gt; 0</button>
+      <button class="chip" data-filter="zeroNeg">🚫 Zero / Neg</button>
+      <button class="chip" data-filter="modified">⚠️ Differences (<span id="auditDiffCount">0</span>)</button>
+    </div>
+  </div>
+  <div class="result-meta" style="display:flex;justify-content:space-between;align-items:center">
+    <span id="auditResultMeta"></span>
+    <button class="btn-sm btn-green" id="btnExportAudit">📥 Export Diff</button>
+  </div>
+  <ul id="auditItemList" class="item-list"></ul>
+</section>
+
+<!-- ================= TAB 5: SETUP ================= -->
+<section id="tabSettings" class="tab-content">
+  <div class="settings-card">
+    <div class="settings-title">User Account &amp; Server</div>
+    <div class="hint" style="margin-bottom:10px" id="settingsUserSummary">Not signed in</div>
+    <div class="settings-block form-group">
+      <label for="settingsWebhookUrlInput">Google Apps Script URL (/exec)</label>
+      <input type="url" id="settingsWebhookUrlInput" class="form-control" style="font-size:13px" placeholder="https://script.google.com/macros/s/.../exec">
+      <button class="btn-sm btn-green btn-wide" style="margin-top:8px" id="btnSaveWebhook">💾 Save Server URL</button>
+    </div>
+    <button class="btn-sm btn-danger-soft btn-wide" id="btnLogout">🔒 Sign Out / Switch User</button>
+  </div>
+
+  <div class="settings-card">
+    <div class="settings-title">Daily Stock Feed (Available = Stock − Reserved)</div>
+    <div class="hint" style="margin-bottom:8px">Status: <b id="stockStatus">Not synced yet</b></div>
+    <button class="btn-sm btn-green btn-wide" id="btnUpdateStock">🔄 Download Latest Stock</button>
+    <label style="display:flex;align-items:center;gap:10px;margin:12px 0 0;font-size:14.5px;font-weight:700">
+      <input type="checkbox" id="settingsStockAuto" style="width:20px;height:20px;accent-color:var(--brand-green)"> Auto-update stock when app opens
+    </label>
+  </div>
+
+  <div class="settings-card">
+    <div class="settings-title">Master Item List (Offline Excel / CSV)</div>
+    <div class="hint" style="margin-bottom:10px">Loaded items: <b id="settingsItemsLoadedCount">0</b> · Mfg codes: <b id="settingsMfgCount">0</b></div>
+    <div class="grid-2">
+      <button class="btn-sm btn-green" id="btnLoadMaster">➕ Add / Update Excel</button>
+      <button class="btn-sm btn-light" id="btnReplaceMaster">♻️ Replace Full List</button>
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <div class="settings-title">Backup, Restore &amp; Install App</div>
+    <div class="grid-2">
+      <button class="btn-sm btn-green" id="btnBackup">💾 Backup JSON</button>
+      <button class="btn-sm btn-light" id="btnRestore">📂 Restore JSON</button>
+    </div>
+    <button class="btn-sm btn-blue btn-wide" style="margin-top:10px;display:none" id="btnInstallApp">📲 Install App on Home Screen</button>
+    <div class="danger-zone" style="margin-top:14px">
+      <div style="font-size:14px;font-weight:800;color:var(--danger);margin-bottom:6px">⚠️ Reset Local App Data</div>
+      <button class="btn-sm btn-danger-soft btn-wide" id="btnReset">🗑️ Clear All Phone Data</button>
+    </div>
+  </div>
+  <div class="app-footer">Anil Plastics Workflow System · Ver 08.0 PWA</div>
+</section>
+
+<input type="file" id="fileInput" class="hidden-input" accept=".xlsx,.xls,.csv">
+<input type="file" id="pdfFileInput" class="hidden-input" accept="application/pdf">
+<input type="file" id="restoreInput" class="hidden-input" accept=".json,application/json">
+
+<!-- ================= MODALS ================= -->
+<div id="orderItemModal" class="modal-overlay">
+  <div class="modal">
+    <div id="orderModalItemName" class="modal-title">Item</div>
+    <div class="modal-row"><span>Available Stock: <b id="orderModalStock">0</b></span><span>Pack: <b id="orderModalPack">PC</b></span></div>
+    <div class="modal-row"><span>Mfg: <b id="orderModalMfgCode" class="mfg-pill">-</b></span><span>Barcode: <b id="orderModalBarcode">-</b></span></div>
+    <div class="form-group" style="margin-top:10px">
+      <label for="orderModalQty">Quantity *</label>
+      <div class="qty-stepper">
+        <button type="button" data-step="-1">−</button>
+        <input type="number" id="orderModalQty" class="form-control" placeholder="0" inputmode="decimal" min="0" step="any">
+        <button type="button" data-step="1">+</button>
+      </div>
+      <div class="quick-qty" id="quickQty">
+        <button type="button" data-add="1">+1</button><button type="button" data-add="5">+5</button><button type="button" data-add="10">+10</button><button type="button" data-add="12">+12</button><button type="button" data-add="25">+25</button><button type="button" data-add="50">+50</button>
+      </div>
+      <div class="stock-warn" id="orderStockWarn">⚠️ Quantity is more than available stock (booking still allowed).</div>
+    </div>
+    <div class="form-row" style="margin-top:10px">
+      <div class="form-group">
+        <label for="orderModalRate">Rate (₹)</label>
+        <input type="number" step="any" id="orderModalRate" class="form-control" inputmode="decimal" style="font-weight:800">
+      </div>
+      <div class="form-group" style="flex:1.4">
+        <label for="orderModalItemNote">Item Note / Scheme</label>
+        <input type="text" id="orderModalItemNote" class="form-control" placeholder="e.g. 10+1">
+      </div>
+    </div>
+    <div class="line-amount"><span>Line Amount</span><b>₹ <span id="orderModalLineAmt">0.00</span></b></div>
+    <div class="modal-buttons">
+      <button class="btn-modal btn-modal-cancel" data-close-modal="orderItemModal">Cancel</button>
+      <button class="btn-modal btn-modal-delete" id="btnRemoveFromCart" style="display:none">Remove</button>
+      <button class="btn-modal btn-modal-save" id="btnSaveItem">Add to Order</button>
+    </div>
+  </div>
+</div>
+
+<div id="reviewOrderModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="reviewTitle">Review Order</div>
+    <div class="modal-row"><span>Party: <b id="revPartyName">-</b></span><span>Route: <b id="revRoute">-</b></span></div>
+    <div class="modal-row"><span>Salesman: <b id="revSalesman">-</b></span><span>Date: <b id="revDate">-</b></span></div>
+    <div id="revItemsList" style="max-height:42vh;overflow-y:auto;font-size:14px;margin:8px 0"></div>
+    <div class="rev-total"><span>Total (<span id="revQty">0</span> qty)</span><span>₹ <span id="revTotalAmount">0.00</span></span></div>
+    <div class="modal-buttons">
+      <button class="btn-modal btn-modal-cancel" data-close-modal="reviewOrderModal">Back</button>
+      <button class="btn-modal btn-modal-save" id="btnFinalizeOrder">Save Order</button>
+    </div>
+    <button class="btn-sm btn-wa btn-wide" style="margin-top:8px" id="btnFinalizeOrderWa">Save &amp; Send on WhatsApp</button>
+  </div>
+</div>
+
+<div id="auditEditModal" class="modal-overlay">
+  <div class="modal">
+    <div id="auditModalItemName" class="modal-title">Audit Item</div>
+    <div class="modal-row"><span>Barcode: <b id="auditModalBarcode">-</b></span><span>Available: <b id="auditModalSystemStock">0</b></span></div>
+    <div class="form-group" style="margin-top:10px">
+      <label for="auditModalPhysicalStockInput">Counted Physical Stock</label>
+      <div class="qty-stepper">
+        <button type="button" data-audit-step="-1">−</button>
+        <input type="number" step="any" id="auditModalPhysicalStockInput" class="form-control" inputmode="decimal">
+        <button type="button" data-audit-step="1">+</button>
+      </div>
+      <div class="line-amount"><span>Difference</span><b id="auditModalDiff">0</b></div>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn-modal btn-modal-cancel" data-close-modal="auditEditModal">Cancel</button>
+      <button class="btn-modal btn-modal-save" id="btnSaveAudit">Save Count</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap"><div class="toast" id="toast"></div></div>
+
+<script src="db.js"></script>
+<script src="api.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---------------- State ----------------
+  let ITEMS = [];
+  let ORDERS = [];
+  let TASKS = [];
+  let AUDIT_COUNTS = JSON.parse(localStorage.getItem('ap_audit_counts') || '{}');
+  let CART = {}; // _key -> { ItemName, MfgCode, Barcode, Pack, Qty, Rate, Amount, ItemNarration }
+  let EDITING_ORDER_ID = null;
+  let ACTIVE_MODAL_ITEM = null;
+  let ACTIVE_AUDIT_ITEM = null;
+  let ACTIVE_TASK = null;
+
+  let orderPageLimit = 100;
+  let auditPageLimit = 100;
+  let orderFilter = 'all';
+  let auditFilter = 'all';
+  let savedFilter = 'all';
+  let replaceMasterMode = false;
+  let deferredInstallPrompt = null;
+  let syncInProgress = false;
+
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg, isErr) {
+    const el = $('toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (isErr ? ' err' : '');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  function todayStr() {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}/${d.getFullYear()}`;
+  }
+
+  function yymmddStr() {
+    const d = new Date();
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yy}${mm}${dd}`;
+  }
+
+  function timeStr() {
+    return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+
+  function updateClock() {
+    const d = new Date();
+    const dt = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    $('headerLiveDateTime').textContent = `${dt} · ${timeStr()}`;
+    const dot = $('netDot');
+    if (navigator.onLine) dot.classList.remove('off'); else dot.classList.add('off');
+  }
+
+  // ---------------- Lazy External Libraries ----------------
+  function loadScriptOnce(src, globalName) {
+    if (window[globalName]) return Promise.resolve(window[globalName]);
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => resolve(window[globalName]);
+      s.onerror = () => reject(new Error('Failed to load ' + globalName + ' (requires internet once to cache)'));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensureXlsx() {
+    return loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'XLSX');
+  }
+
+  async function ensurePdfJs() {
+    const lib = await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', 'pdfjsLib');
+    if (lib && !lib.GlobalWorkerOptions.workerSrc) {
+      lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return lib;
+  }
+
+  // ---------------- Auth & Role Layout ----------------
+  function applyUserRoleUI() {
+    const cfg = AnilApi.getConfig();
+    const u = cfg.user;
+    if (!u || !cfg.token) {
+      $('loginServerUrl').value = cfg.url || '';
+      $('loginScreen').classList.add('open');
+      return;
+    }
+    $('loginScreen').classList.remove('open');
+    $('displaySalesmanName').textContent = `👤 ${u.name} (${u.shortCode || ''})`;
+    $('settingsUserSummary').innerHTML = `Signed in as <b>${u.name}</b> · Code: <b>${u.shortCode}</b> · Roles: <b>${(u.roles || []).join(', ')}</b>`;
+    $('settingsWebhookUrlInput').value = cfg.url || '';
+
+    const roles = u.roles || ['salesperson'];
+    const isSales = roles.includes('salesperson') || roles.includes('admin');
+    const isEmp = roles.includes('employee') || roles.includes('admin');
+
+    if (isSales && isEmp) {
+      $('roleSwitcher').classList.add('show');
+    } else {
+      $('roleSwitcher').classList.remove('show');
+    }
+
+    if (isSales) {
+      switchRoleView('book');
+    } else {
+      switchRoleView('tasks');
+    }
+  }
+
+  function switchRoleView(view) {
+    if (view === 'tasks') {
+      $('roleBtnTasks').classList.add('active');
+      $('roleBtnBook').classList.remove('active');
+      $('salesNavTabs').style.display = 'none';
+      $('empNavTabs').style.display = 'flex';
+      activateTab('tasks');
+      renderTasksList();
+    } else {
+      $('roleBtnBook').classList.add('active');
+      $('roleBtnTasks').classList.remove('active');
+      $('empNavTabs').style.display = 'none';
+      $('salesNavTabs').style.display = 'flex';
+      activateTab('order');
+    }
+  }
+
+  function activateTab(tabName) {
+    document.querySelectorAll('.nav-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === tabName));
+    document.querySelectorAll('.tab-content').forEach((s) => s.classList.remove('active'));
+    const map = { order: 'tabOrder', catalog: 'tabCatalog', saved: 'tabSaved', audit: 'tabAudit', settings: 'tabSettings', tasks: 'tabTasks' };
+    if (map[tabName]) $(map[tabName]).classList.add('active');
+    $('cartBar').style.display = (tabName === 'order') ? 'flex' : 'none';
+    if (tabName === 'saved') renderSavedOrders();
+    if (tabName === 'audit') renderAuditList();
+    if (tabName === 'catalog') renderCatalogues();
+    if (tabName === 'tasks') renderTasksList();
+  }
+
+  // ---------------- Stock Feed (Native JSON, Versioned) ----------------
+  async function downloadStockFeed(silent) {
+    if (!navigator.onLine) {
+      if (!silent) toast('Offline — using saved stock on phone', true);
+      return;
+    }
+    try {
+      const curVer = localStorage.getItem('ap_stock_version') || '';
+      const res = await AnilApi.fetchStockFeed(curVer);
+      if (!res.ok) {
+        if (!silent) toast(res.message || 'Stock fetch failed', true);
+        return;
+      }
+      if (res.unchanged) {
+        if (!silent) toast('Stock is already up to date ✓');
+        return;
+      }
+      // Schema: [ItemName, MfgCode, Barcode, Pack, RawStock, Reserved, Available, SaleRate]
+      const mapped = (res.items || []).map((row) => {
+        const it = {
+          ItemName: String(row[0] || ''),
+          MfgCode: String(row[1] || 'UNKNOWN'),
+          Barcode: String(row[2] || ''),
+          Pack: String(row[3] || 'PC'),
+          RawStock: Number(row[4]) || 0,
+          Reserved: Number(row[5]) || 0,
+          Stock: Number(row[6]) || 0, // Available = RawStock - Reserved
+          SaleRate: Number(row[7]) || 0
+        };
+        it._key = AnilDB.makeItemKey(it);
+        it._search = `${it.ItemName} ${it.Barcode} ${it.MfgCode}`.toLowerCase();
+        return it;
+      });
+
+      ITEMS = mapped;
+      await AnilDB.putMany('items', ITEMS, true);
+      localStorage.setItem('ap_stock_version', res.version || '');
+      localStorage.setItem('ap_stock_updated', res.updated || new Date().toISOString());
+      refreshItemFilters();
+      renderOrderList();
+      updateStockStatusLabel();
+      if (!silent) toast(`Stock updated: ${ITEMS.length} items ✓`);
+    } catch (err) {
+      if (!silent) toast(err.message, true);
+    }
+  }
+
+  function updateStockStatusLabel() {
+    const upd = localStorage.getItem('ap_stock_updated');
+    const txt = upd ? new Date(upd).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Local only';
+    $('stockStatus').textContent = `${txt} · ${ITEMS.length} items`;
+    $('settingsItemsLoadedCount').textContent = ITEMS.length;
+  }
+
+  // ---------------- Item Search & Virtualized Paged Rendering ----------------
+  function prepareItemsSearchIndex() {
+    ITEMS.forEach((it) => {
+      if (!it._key) it._key = AnilDB.makeItemKey(it);
+      if (!it._search) it._search = `${it.ItemName} ${it.Barcode} ${it.MfgCode}`.toLowerCase();
+    });
+  }
+
+  function refreshItemFilters() {
+    const counts = {};
+    ITEMS.forEach((it) => {
+      const m = it.MfgCode || 'UNKNOWN';
+      counts[m] = (counts[m] || 0) + 1;
+    });
+    const mfgs = Object.keys(counts).sort();
+    $('settingsMfgCount').textContent = mfgs.length;
+    const opts = `<option value="ALL">All Manufacturers (${ITEMS.length})</option>` +
+      mfgs.map((m) => `<option value="${m}">${m} (${counts[m]})</option>`).join('');
+    $('orderMfgFilter').innerHTML = opts;
+    $('auditMfgFilter').innerHTML = opts;
+  }
+
+  function filterItems(query, mfg, chipFilter, isAudit) {
+    const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    return ITEMS.filter((it) => {
+      if (mfg && mfg !== 'ALL' && (it.MfgCode || 'UNKNOWN') !== mfg) return false;
+      if (chipFilter === 'inStock' && !(Number(it.Stock) > 0)) return false;
+      if (chipFilter === 'zeroNeg' && Number(it.Stock) > 0) return false;
+      if (chipFilter === 'inCart' && !CART[it._key]) return false;
+      if (chipFilter === 'modified' && AUDIT_COUNTS[it._key] === undefined) return false;
+      for (let i = 0; i < terms.length; i++) {
+        if (!it._search.includes(terms[i])) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderOrderList() {
+    const q = $('orderSearchInput').value;
+    const mfg = $('orderMfgFilter').value;
+    const matched = filterItems(q, mfg, orderFilter, false);
+    const slice = matched.slice(0, orderPageLimit);
+
+    $('orderResultMeta').textContent = `Showing ${slice.length} of ${matched.length} items (Available Stock)`;
+    const html = slice.map((it) => {
+      const c = CART[it._key];
+      const stk = Number(it.Stock) || 0;
+      const resTag = it.Reserved > 0 ? ` <small style="color:#b45309">(Res:${it.Reserved})</small>` : '';
+      return `<li class="item-card ${c ? 'in-cart' : ''}" data-key="${encodeURIComponent(it._key)}">
+        <div class="item-header">
+          <div class="item-name">${escapeHtml(it.ItemName)}</div>
+          <span class="badge-tag ${c ? 'tag-cart' : 'tag-count'}">${c ? `✓ ${c.Qty} ${it.Pack || 'PC'}` : '+ Add'}</span>
+        </div>
+        <div class="item-details">
+          <div>Mfg: <span class="mfg-pill">${escapeHtml(it.MfgCode || '-')}</span> · ${escapeHtml(it.Barcode || '-')}</div>
+          <div>Avail: <span class="${stk > 0 ? 'val-highlight' : 'val-zero'}">${stk}</span>${resTag} · <span class="val-highlight">₹ ${Number(it.SaleRate || 0).toFixed(2)}</span></div>
+        </div>
+        ${c && c.ItemNarration ? `<div class="item-note">📝 ${escapeHtml(c.ItemNarration)}</div>` : ''}
+      </li>`;
+    }).join('');
+
+    const moreBtn = matched.length > slice.length
+      ? `<button class="btn-more" id="btnMoreOrder">Show 100 more (${matched.length - slice.length} remaining)</button>` : '';
+    $('orderItemList').innerHTML = html + moreBtn;
+  }
+
+  function updateCartFooter() {
+    const lines = Object.values(CART);
+    const count = lines.length;
+    const qty = lines.reduce((s, x) => s + Number(x.Qty || 0), 0);
+    const total = lines.reduce((s, x) => s + Number(x.Amount || 0), 0);
+    $('cartCount').textContent = count;
+    $('chipCartCount').textContent = count;
+    $('cartQty').textContent = qty;
+    $('cartTotal').textContent = total.toFixed(2);
+  }
+
+  // ---------------- Order Booking & Sequential Order IDs ----------------
+  function generateOrderNumber(salesmanCode) {
+    const code = (salesmanCode || 'ORD').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const ymd = yymmddStr();
+    const prefix = `${code}-${ymd}-`;
+    let maxSeq = 0;
+    ORDERS.forEach((o) => {
+      if (String(o.id).startsWith(prefix)) {
+        const tail = parseInt(String(o.id).slice(prefix.length), 10);
+        if (!isNaN(tail) && tail > maxSeq) maxSeq = tail;
+      }
+    });
+    const key = 'ap_seq_' + prefix;
+    const storedSeq = parseInt(localStorage.getItem(key) || '0', 10);
+    const next = Math.max(maxSeq, storedSeq) + 1;
+    localStorage.setItem(key, String(next));
+    return prefix + String(next).padStart(3, '0');
+  }
+
+  async function saveOrderFromCart(sendWhatsApp) {
+    const party = $('orderPartyName').value.trim();
+    if (!party) {
+      toast('Enter Party / Customer Name first', true);
+      $('partyFormCard').style.display = 'block';
+      $('partyCompactBanner').style.display = 'none';
+      $('orderPartyName').focus();
+      return;
+    }
+    const items = Object.values(CART);
+    if (!items.length) {
+      toast('Add at least one item to the order', true);
+      return;
+    }
+
+    const cfg = AnilApi.getConfig();
+    const u = cfg.user || { name: 'Sales Rep', shortCode: 'REP' };
+    const totalAmount = items.reduce((s, x) => s + Number(x.Amount || 0), 0);
+    const isEdit = Boolean(EDITING_ORDER_ID);
+    const orderId = isEdit ? EDITING_ORDER_ID : generateOrderNumber(u.shortCode);
+
+    const orderObj = {
+      id: orderId,
+      salesman: u.name,
+      date: todayStr(),
+      time: timeStr(),
+      partyName: party,
+      route: $('orderRoute').value.trim(),
+      narration: $('orderNarration').value.trim(),
+      items: items.map((x) => ({
+        ItemName: x.ItemName,
+        MfgCode: x.MfgCode,
+        Barcode: x.Barcode,
+        Pack: x.Pack || 'PC',
+        Qty: Number(x.Qty),
+        Rate: Number(x.Rate),
+        Amount: Number(x.Amount),
+        ItemNarration: x.ItemNarration || ''
+      })),
+      totalAmount: Number(totalAmount.toFixed(2)),
+      synced: false,
+      status: 'New',
+      editedAt: isEdit ? new Date().toISOString() : ''
+    };
+
+    const idx = ORDERS.findIndex((o) => o.id === orderId);
+    if (idx >= 0) ORDERS[idx] = orderObj; else ORDERS.unshift(orderObj);
+    await AnilDB.putOne('orders', orderObj);
+
+    // Reset form & cart
+    CART = {};
+    EDITING_ORDER_ID = null;
+    $('editingBanner').classList.remove('show');
+    $('orderPartyName').value = '';
+    $('orderRoute').value = '';
+    $('orderNarration').value = '';
+    $('partyFormCard').style.display = 'block';
+    $('partyCompactBanner').style.display = 'none';
+    updateCartFooter();
+    renderOrderList();
+    updateSavedBadge();
+    $('reviewOrderModal').classList.remove('open');
+
+    toast(`Saved ${orderId} ✓`);
+    if (sendWhatsApp) shareOrderWhatsApp(orderObj);
+
+    // Trigger auto-sync immediately if online
+    autoSyncAll(true);
+  }
+
+  // ---------------- Auto-Sync + Status Pull + Post-Release Edit Lock ----------------
+  async function autoSyncAll(silent) {
+    if (syncInProgress || !navigator.onLine) return;
+    const cfg = AnilApi.getConfig();
+    if (!cfg.url || !cfg.token) return;
+
+    syncInProgress = true;
+    $('btnCloudSyncText').textContent = 'Syncing…';
+    try {
+      // 1. Flush any offline warehouse task actions first
+      await flushOfflineTaskQueue();
+
+      // 2. Upload pending orders
+      const pending = ORDERS.filter((o) => !o.synced);
+      if (pending.length) {
+        const res = await AnilApi.syncOrders(cfg.user ? cfg.user.name : '', pending);
+        if (res && res.ok && res.ack) {
+          const accepted = new Set(res.acceptedIds || []);
+          const rejectedMap = {};
+          (res.rejectedOrders || []).forEach((r) => { rejectedMap[r.id] = r; });
+
+          for (const o of ORDERS) {
+            if (accepted.has(o.id)) {
+              o.synced = true;
+              await AnilDB.putOne('orders', o);
+            } else if (rejectedMap[o.id]) {
+              // Server rejected edit because order was already released/processed
+              o.synced = true;
+              o.status = rejectedMap[o.id].status;
+              o.lockReason = rejectedMap[o.id].reason;
+              await AnilDB.putOne('orders', o);
+              toast(`⚠️ ${o.id}: ${rejectedMap[o.id].reason}`, true);
+            }
+          }
+        }
+      }
+
+      // 3. Pull live workflow statuses for all orders on this phone
+      const ids = ORDERS.slice(0, 150).map((o) => o.id);
+      const stRes = await AnilApi.myOrders(ids, '');
+      if (stRes && stRes.ok && stRes.statuses) {
+        for (const o of ORDERS) {
+          const info = stRes.statuses[o.id];
+          if (info && info.status) {
+            o.status = info.status;
+            o.remarks = info.remarks || '';
+            o.assignedTo = info.assignedTo || '';
+            o.invoiceNo = info.invoiceNo || '';
+            o.transportNote = info.transportNote || '';
+            await AnilDB.putOne('orders', o);
+          }
+        }
+      }
+
+      updateSavedBadge();
+      if ($('tabSaved').classList.contains('active')) renderSavedOrders();
+      if (!silent) toast('Sync & status check complete ✓');
+    } catch (err) {
+      if (!silent) toast('Sync failed (orders safely kept as Waiting): ' + err.message, true);
+    } finally {
+      syncInProgress = false;
+      $('btnCloudSyncText').textContent = 'Sync & Check Order Status';
+    }
+  }
+
+  function updateSavedBadge() {
+    const waiting = ORDERS.filter((o) => !o.synced).length;
+    $('savedOrdersCount').textContent = waiting || ORDERS.length;
+  }
+
+  function renderSavedOrders() {
+    const q = $('savedSearchInput').value.toLowerCase().trim();
+    const today = todayStr();
+    const todayOrders = ORDERS.filter((o) => o.date === today);
+    $('statToday').textContent = todayOrders.length;
+    $('statPending').textContent = ORDERS.filter((o) => !o.synced).length;
+    $('statValue').textContent = '₹' + Math.round(todayOrders.reduce((s, o) => s + Number(o.totalAmount || 0), 0));
+    $('savedCountLabel').textContent = ORDERS.length;
+
+    const filtered = ORDERS.filter((o) => {
+      if (savedFilter === 'today' && o.date !== today) return false;
+      if (savedFilter === 'pending' && o.synced) return false;
+      if (savedFilter === 'synced' && !o.synced) return false;
+      if (q && !`${o.partyName} ${o.route} ${o.id}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    if (!filtered.length) {
+      $('savedOrdersContainer').innerHTML = '<div class="empty-state">No orders found in this view.</div>';
+      return;
+    }
+
+    $('savedOrdersContainer').innerHTML = filtered.map((o) => {
+      const wf = o.status || 'New';
+      const wfClass = 'wf-' + wf.replace(/\s+/g, '');
+      const canEdit = (wf === 'New');
+      return `<div class="order-card ${o.synced ? (canEdit ? 'synced' : 'locked') : 'pending'}">
+        <div class="order-card-header">
+          <div>
+            <div class="party-name">${escapeHtml(o.partyName)}
+              <span class="sync-tag ${o.synced ? 'ok' : 'wait'}">${o.synced ? '🟢 Synced' : '⏳ Waiting'}</span>
+              <span class="wf-badge ${wfClass}">${escapeHtml(wf)}</span>
+            </div>
+            <div class="order-sub">${escapeHtml(o.id)} · ${escapeHtml(o.date)} ${escapeHtml(o.time)} ${o.route ? '· ' + escapeHtml(o.route) : ''}</div>
+          </div>
+          <div style="font-size:17px;font-weight:900;color:var(--brand-green-dark)">₹${Number(o.totalAmount || 0).toFixed(2)}</div>
+        </div>
+        <div class="order-card-body">
+          ${o.items.map((it) => `<div>• <b>${escapeHtml(it.ItemName)}</b> — ${it.Qty} ${escapeHtml(it.Pack || 'PC')} @ ₹${it.Rate}</div>`).join('')}
+          ${o.invoiceNo ? `<div style="margin-top:6px;color:#166534;font-weight:800">🧾 Invoice: ${escapeHtml(o.invoiceNo)}</div>` : ''}
+          ${o.transportNote ? `<div style="color:#0369a1;font-weight:700">🚚 Transport: ${escapeHtml(o.transportNote)}</div>` : ''}
+          ${o.remarks ? `<div style="color:#92400e;font-weight:700">💬 Office: ${escapeHtml(o.remarks)}</div>` : ''}
+        </div>
+        <div class="order-card-footer">
+          <button class="btn-sm btn-wa" data-wa-order="${escapeHtml(o.id)}">WhatsApp</button>
+          ${canEdit
+            ? `<button class="btn-sm btn-light" data-edit-order="${escapeHtml(o.id)}">✎ Edit Order</button>`
+            : `<span style="font-size:12px;font-weight:800;color:#556b5d;padding:8px">🔒 Locked (${escapeHtml(wf)})</span>`}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function startEditOrder(oid) {
+    const ord = ORDERS.find((o) => o.id === oid);
+    if (!ord) return;
+    if ((ord.status || 'New') !== 'New') {
+      toast(`Cannot edit: order is already "${ord.status}"`, true);
+      return;
+    }
+    EDITING_ORDER_ID = ord.id;
+    CART = {};
+    ord.items.forEach((it) => {
+      const k = AnilDB.makeItemKey(it);
+      CART[k] = Object.assign({ _key: k }, it);
+    });
+    $('orderPartyName').value = ord.partyName;
+    $('orderRoute').value = ord.route || '';
+    $('orderNarration').value = ord.narration || '';
+    $('editingBannerText').textContent = `Editing ${ord.id} (${ord.partyName})`;
+    $('editingBanner').classList.add('show');
+    updateCartFooter();
+    renderOrderList();
+    activateTab('order');
+  }
+
+  // ---------------- Employee: My Tasks (Offline-Capable) ----------------
+  async function renderTasksList() {
+    $('tasksListView').style.display = 'block';
+    $('taskExecView').classList.remove('open');
+
+    if (navigator.onLine) {
+      try {
+        const res = await AnilApi.myTasks();
+        if (res && res.ok) {
+          TASKS = res.tasks || [];
+          await AnilDB.putMany('tasks', TASKS, true);
+        }
+      } catch (e) {}
+    }
+
+    $('myTasksBadge').textContent = TASKS.length;
+    $('empTasksBadge').textContent = TASKS.length;
+
+    if (!TASKS.length) {
+      $('tasksContainer').innerHTML = '<div class="empty-state">🎉 No pending warehouse tasks assigned right now.</div>';
+      return;
+    }
+
+    $('tasksContainer').innerHTML = TASKS.map((t) => {
+      const cls = t.status === 'In Progress' ? 'inprog' : (t.priority === 'Urgent' ? 'urgent' : (t.priority === 'High' ? 'high' : ''));
+      return `<div class="task-card ${cls}" data-open-task="${escapeHtml(t.orderId)}">
+        <div class="task-header">
+          <div class="task-party">🏪 ${escapeHtml(t.partyName)}</div>
+          <span class="prio-pill prio-${escapeHtml(t.priority || 'Normal')}">${escapeHtml(t.priority || 'Normal')}</span>
+        </div>
+        <div style="font-size:14px;font-weight:700;color:#334155;margin-bottom:8px">
+          Order: <b>${escapeHtml(t.orderId)}</b> · ${escapeHtml(t.route || 'Local')} · <b>${t.items.length} items</b>
+          ${t.dueTime ? `<br>⏰ Due: <b>${escapeHtml(t.dueTime)}</b>` : ''}
+          ${t.narration ? `<br>📝 ${escapeHtml(t.narration)}` : ''}
+        </div>
+        <button class="btn-wide ${t.status === 'In Progress' ? 'btn-blue' : 'btn-green'}">
+          ${t.status === 'In Progress' ? '▶ Continue Picking (' + t.items.length + ' items)' : '▶ Start Picking Order'}
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  async function openTaskExecution(oid) {
+    const task = TASKS.find((t) => t.orderId === oid);
+    if (!task) return;
+    ACTIVE_TASK = task;
+
+    if (task.status !== 'In Progress') {
+      task.status = 'In Progress';
+      await AnilDB.putOne('tasks', task);
+      await queueTaskAction({ type: 'taskStart', orderId: oid });
+    }
+
+    $('tasksListView').style.display = 'none';
+    $('taskExecView').classList.add('open');
+    $('execOrderNo').textContent = task.orderId;
+    $('execPartyName').textContent = task.partyName;
+    $('execOrderMeta').textContent = `${task.route || ''} · Salesman: ${task.salesman || '-'} ${task.narration ? '· ' + task.narration : ''}`;
+    renderTaskItems();
+  }
+
+  function renderTaskItems() {
+    if (!ACTIVE_TASK) return;
+    $('execItemsContainer').innerHTML = ACTIVE_TASK.items.map((it, idx) => {
+      const st = it.resultStatus || 'Pending';
+      const boxCls = st === 'Done' ? 'st-Done' : (st === 'Not Available' ? 'st-NotAvailable' : (st === 'Partial' ? 'st-Partial' : ''));
+      return `<div class="task-item-box ${boxCls}">
+        <div class="task-item-title">${idx + 1}. ${escapeHtml(it.ItemName)}</div>
+        <div class="task-item-meta">
+          <span class="task-qty-big">Qty: ${it.orderedQty} ${escapeHtml(it.Pack || 'PC')}</span>
+          <span>Mfg: <b>${escapeHtml(it.MfgCode || '-')}</b></span>
+          <span>Barcode: <b>${escapeHtml(it.Barcode || '-')}</b></span>
+        </div>
+        <div class="task-action-grid">
+          <button class="btn-task-act ${st === 'Done' ? 'sel-done' : ''}" data-titem="${it.itemNo}" data-tact="Done">✅ Done</button>
+          <button class="btn-task-act ${st === 'Partial' ? 'sel-part' : ''}" data-titem="${it.itemNo}" data-tact="Partial">⚠️ Partial</button>
+          <button class="btn-task-act ${st === 'Not Available' ? 'sel-na' : ''}" data-titem="${it.itemNo}" data-tact="Not Available">❌ Not Avail</button>
+        </div>
+        <div class="partial-box ${st === 'Partial' || st === 'Not Available' ? 'show' : ''}">
+          ${st === 'Partial' ? `
+            <label style="font-size:13px;font-weight:800;display:block;margin-bottom:4px">Available Qty Packed (out of ${it.orderedQty}):</label>
+            <input type="number" class="form-control" style="margin-bottom:6px" value="${it.fulfilledQty}" min="0" max="${it.orderedQty}" data-part-qty="${it.itemNo}">
+          ` : ''}
+          <input type="text" class="form-control" placeholder="Reason (optional, e.g. damaged / out of stock)" value="${escapeHtml(it.reason || '')}" data-part-reason="${it.itemNo}">
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function queueTaskAction(payload) {
+    if (navigator.onLine) {
+      try {
+        if (payload.type === 'taskStart') {
+          await AnilApi.taskStart(payload.orderId);
+          return;
+        }
+        if (payload.type === 'taskItemResult') {
+          await AnilApi.taskItemResult(payload.orderId, payload.itemNo, payload.resultStatus, payload.fulfilledQty, payload.reason);
+          return;
+        }
+        if (payload.type === 'taskComplete') {
+          await AnilApi.taskComplete(payload.orderId, payload.items);
+          return;
+        }
+      } catch (e) {}
+    }
+    await AnilDB.putOne('taskQueue', Object.assign({ createdAt: Date.now() }, payload));
+  }
+
+  async function flushOfflineTaskQueue() {
+    const q = await AnilDB.getAll('taskQueue');
+    for (const entry of q) {
+      try {
+        if (entry.type === 'taskStart') await AnilApi.taskStart(entry.orderId);
+        else if (entry.type === 'taskItemResult') await AnilApi.taskItemResult(entry.orderId, entry.itemNo, entry.resultStatus, entry.fulfilledQty, entry.reason);
+        else if (entry.type === 'taskComplete') await AnilApi.taskComplete(entry.orderId, entry.items);
+        await AnilDB.deleteOne('taskQueue', entry.qid);
+      } catch (e) {
+        break;
+      }
+    }
+  }
+
+  // ---------------- Audit List ----------------
+  function renderAuditList() {
+    const q = $('auditSearchInput').value;
+    const mfg = $('auditMfgFilter').value;
+    const matched = filterItems(q, mfg, auditFilter, true);
+    const slice = matched.slice(0, auditPageLimit);
+    $('auditDiffCount').textContent = Object.keys(AUDIT_COUNTS).length;
+    $('auditResultMeta').textContent = `Showing ${slice.length} of ${matched.length}`;
+
+    $('auditItemList').innerHTML = slice.map((it) => {
+      const counted = AUDIT_COUNTS[it._key];
+      const sys = Number(it.Stock) || 0;
+      const diff = counted !== undefined ? (counted - sys) : 0;
+      return `<li class="item-card ${counted !== undefined ? 'modified' : ''}" data-audit-key="${encodeURIComponent(it._key)}">
+        <div class="item-header">
+          <div class="item-name">${escapeHtml(it.ItemName)}</div>
+          <span class="badge-tag tag-count">${counted !== undefined ? `Count: ${counted} (${diff >= 0 ? '+' + diff : diff})` : 'Tap to Count'}</span>
+        </div>
+        <div class="item-details">
+          <div>Mfg: <span class="mfg-pill">${escapeHtml(it.MfgCode || '-')}</span> · ${escapeHtml(it.Barcode || '-')}</div>
+          <div>Avail Stock: <b>${sys}</b> · ₹ ${Number(it.SaleRate || 0).toFixed(2)}</div>
+        </div>
+      </li>`;
+    }).join('');
+  }
+
+  // ---------------- Catalogues (Lazy pdf.js) ----------------
+  let pdfDoc = null, pdfPageNum = 1;
+  async function renderCatalogues() {
+    const list = await AnilDB.getAll('pdfs');
+    if (!list.length) {
+      $('cataloguesContainer').innerHTML = '<div class="empty-state">No PDF catalogues imported yet. Tap "📥 Import PDF" above.</div>';
+      return;
+    }
+    $('cataloguesContainer').innerHTML = list.map((p) => `
+      <div class="catalog-card">
+        <div>
+          <div class="catalog-title">📖 ${escapeHtml(p.name)}</div>
+          <div style="font-size:12.5px;color:var(--text-muted)">Offline PDF · ${(p.size / 1048576).toFixed(1)} MB</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm btn-green" data-open-pdf="${escapeHtml(p.id)}">Open</button>
+          <button class="btn-sm btn-danger-soft" data-del-pdf="${escapeHtml(p.id)}">🗑️</button>
+        </div>
+      </div>`).join('');
+  }
+
+  async function openPdfViewer(id) {
+    const list = await AnilDB.getAll('pdfs');
+    const item = list.find((x) => x.id === id);
+    if (!item) return;
+    $('pdfViewerTitle').textContent = item.name;
+    $('pdfViewerModal').classList.add('open');
+    $('pdfLoading').classList.add('show');
+    try {
+      const pdfjs = await ensurePdfJs();
+      const buf = await item.blob.arrayBuffer();
+      pdfDoc = await pdfjs.getDocument({ data: buf }).promise;
+      pdfPageNum = 1;
+      await renderPdfPage(pdfPageNum);
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      $('pdfLoading').classList.remove('show');
+    }
+  }
+
+  async function renderPdfPage(num) {
+    if (!pdfDoc) return;
+    const page = await pdfDoc.getPage(num);
+    const vp = page.getViewport({ scale: 1.5 });
+    const canvas = $('pdfCanvas');
+    canvas.height = vp.height;
+    canvas.width = vp.width;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    $('pdfPageLabel').textContent = `${num} / ${pdfDoc.numPages}`;
+  }
+
+  // ---------------- Excel Import / Export (Lazy SheetJS) ----------------
+  async function handleExcelUpload(file) {
+    try {
+      toast('Loading Excel reader…');
+      const XLSX = await ensureXlsx();
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data, { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+      if (!rows.length) { toast('Excel file is empty', true); return; }
+
+      const mapByKey = new Map();
+      if (!replaceMasterMode) ITEMS.forEach((it) => mapByKey.set(it._key, it));
+
+      rows.forEach((r) => {
+        const name = String(r.ItemName || r['Item Name'] || r.Item || r.Product || '').trim();
+        if (!name) return;
+        const it = {
+          ItemName: name,
+          MfgCode: String(r.MfgCode || r.Mfg || r.Company || 'UNKNOWN').trim(),
+          Barcode: String(r.Barcode || r.Code || '').trim(),
+          Pack: String(r.Pack || r.Unit || 'PC').trim(),
+          Stock: parseFloat(r.Stock || r.Qty || r['Closing Stock'] || 0) || 0,
+          SaleRate: parseFloat(r.SaleRate || r.Rate || r.MRP || r.Price || 0) || 0
+        };
+        it._key = AnilDB.makeItemKey(it);
+        it._search = `${it.ItemName} ${it.Barcode} ${it.MfgCode}`.toLowerCase();
+        mapByKey.set(it._key, it);
+      });
+
+      ITEMS = Array.from(mapByKey.values());
+      await AnilDB.putMany('items', ITEMS, true);
+      refreshItemFilters();
+      renderOrderList();
+      updateStockStatusLabel();
+      toast(`Loaded ${ITEMS.length} items ✓`);
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
+  function shareOrderWhatsApp(o) {
+    const lines = [
+      `*ANIL PLASTICS ORDER*`,
+      `Order: ${o.id} (${o.date})`,
+      `Party: *${o.partyName}* ${o.route ? '(' + o.route + ')' : ''}`,
+      `Salesman: ${o.salesman}`,
+      `----------------`,
+      ...o.items.map((it, i) => `${i + 1}. ${it.ItemName} x ${it.Qty} ${it.Pack || 'PC'} = ₹${Number(it.Amount).toFixed(2)}`),
+      `----------------`,
+      `*Total: ₹${Number(o.totalAmount).toFixed(2)}*`
+    ];
+    window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // ---------------- Event Wiring ----------------
+  function bindEvents() {
+    // Login
+    $('btnDoLogin').onclick = async () => {
+      const name = $('loginName').value.trim();
+      const pin = $('loginPin').value.trim();
+      const url = $('loginServerUrl').value.trim();
+      if (url) AnilApi.setUrl(url);
+      if (!AnilApi.getConfig().url) {
+        $('loginMsg').textContent = 'Expand "Server Connection Link" above and paste your /exec URL first.';
+        return;
+      }
+      $('btnDoLogin').disabled = true;
+      $('loginMsg').textContent = 'Signing in…';
+      try {
+        const res = await AnilApi.login(name, pin);
+        if (!res.ok) {
+          $('loginMsg').textContent = res.message || 'Login failed';
+        } else {
+          AnilApi.setSession(res.user);
+          $('loginMsg').textContent = '';
+          applyUserRoleUI();
+          downloadStockFeed(true);
+          autoSyncAll(true);
+        }
+      } catch (err) {
+        $('loginMsg').textContent = err.message;
+      } finally {
+        $('btnDoLogin').disabled = false;
+      }
+    };
+
+    window.addEventListener('ap:auth-expired', () => {
+      AnilApi.setSession(null);
+      applyUserRoleUI();
+    });
+
+    // Role switcher & tabs
+    document.querySelectorAll('.role-btn').forEach((b) => {
+      b.onclick = () => switchRoleView(b.dataset.roleView);
+    });
+    document.querySelectorAll('.nav-tab').forEach((b) => {
+      b.onclick = () => activateTab(b.dataset.tab);
+    });
+
+    // Party form collapse/expand
+    $('btnCollapseParty').onclick = () => {
+      const p = $('orderPartyName').value.trim();
+      if (!p) { toast('Enter Party Name first', true); return; }
+      $('compactPartyNameDisplay').textContent = p;
+      $('compactRouteDisplay').textContent = $('orderRoute').value ? `(${$('orderRoute').value})` : '';
+      $('partyFormCard').style.display = 'none';
+      $('partyCompactBanner').style.display = 'flex';
+    };
+    $('partyCompactBanner').onclick = () => {
+      $('partyCompactBanner').style.display = 'none';
+      $('partyFormCard').style.display = 'block';
+    };
+
+    // Debounced Search
+    let searchTimer = null;
+    $('orderSearchInput').oninput = () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { orderPageLimit = 100; renderOrderList(); }, 120);
+    };
+    $('orderMfgFilter').onchange = () => { orderPageLimit = 100; renderOrderList(); };
+    $('orderChips').onclick = (e) => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      $('orderChips').querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+      btn.classList.add('active');
+      orderFilter = btn.dataset.filter;
+      orderPageLimit = 100;
+      renderOrderList();
+    };
+
+    // Item click -> open modal
+    $('orderItemList').onclick = (e) => {
+      if (e.target.id === 'btnMoreOrder') {
+        orderPageLimit += 100;
+        renderOrderList();
+        return;
+      }
+      const card = e.target.closest('.item-card');
+      if (!card) return;
+      const key = decodeURIComponent(card.dataset.key);
+      const it = ITEMS.find((x) => x._key === key);
+      if (!it) return;
+      ACTIVE_MODAL_ITEM = it;
+      const existing = CART[key];
+      $('orderModalItemName').textContent = it.ItemName;
+      $('orderModalStock').textContent = it.Stock;
+      $('orderModalPack').textContent = it.Pack || 'PC';
+      $('orderModalMfgCode').textContent = it.MfgCode || '-';
+      $('orderModalBarcode').textContent = it.Barcode || '-';
+      $('orderModalQty').value = existing ? existing.Qty : '';
+      $('orderModalRate').value = existing ? existing.Rate : (it.SaleRate || 0);
+      $('orderModalItemNote').value = existing ? (existing.ItemNarration || '') : '';
+      $('btnRemoveFromCart').style.display = existing ? 'block' : 'none';
+      updateModalLineCalc();
+      $('orderItemModal').classList.add('open');
+      setTimeout(() => $('orderModalQty').focus(), 80);
+    };
+
+    function updateModalLineCalc() {
+      const q = parseFloat($('orderModalQty').value) || 0;
+      const r = parseFloat($('orderModalRate').value) || 0;
+      $('orderModalLineAmt').textContent = (q * r).toFixed(2);
+      const avail = ACTIVE_MODAL_ITEM ? (Number(ACTIVE_MODAL_ITEM.Stock) || 0) : 0;
+      $('orderStockWarn').classList.toggle('show', q > avail);
+    }
+
+    $('orderModalQty').oninput = updateModalLineCalc;
+    $('orderModalRate').oninput = updateModalLineCalc;
+    document.querySelectorAll('[data-step]').forEach((b) => {
+      b.onclick = () => {
+        const cur = parseFloat($('orderModalQty').value) || 0;
+        $('orderModalQty').value = Math.max(0, cur + Number(b.dataset.step));
+        updateModalLineCalc();
+      };
+    });
+    $('quickQty').onclick = (e) => {
+      const b = e.target.closest('[data-add]');
+      if (!b) return;
+      const cur = parseFloat($('orderModalQty').value) || 0;
+      $('orderModalQty').value = cur + Number(b.dataset.add);
+      updateModalLineCalc();
+    };
+
+    $('btnSaveItem').onclick = () => {
+      if (!ACTIVE_MODAL_ITEM) return;
+      const q = parseFloat($('orderModalQty').value) || 0;
+      const r = parseFloat($('orderModalRate').value) || 0;
+      if (q <= 0) {
+        delete CART[ACTIVE_MODAL_ITEM._key];
+      } else {
+        CART[ACTIVE_MODAL_ITEM._key] = {
+          _key: ACTIVE_MODAL_ITEM._key,
+          ItemName: ACTIVE_MODAL_ITEM.ItemName,
+          MfgCode: ACTIVE_MODAL_ITEM.MfgCode,
+          Barcode: ACTIVE_MODAL_ITEM.Barcode,
+          Pack: ACTIVE_MODAL_ITEM.Pack || 'PC',
+          Qty: q,
+          Rate: r,
+          Amount: Number((q * r).toFixed(2)),
+          ItemNarration: $('orderModalItemNote').value.trim()
+        };
+      }
+      $('orderItemModal').classList.remove('open');
+      updateCartFooter();
+      renderOrderList();
+    };
+
+    $('btnRemoveFromCart').onclick = () => {
+      if (ACTIVE_MODAL_ITEM) delete CART[ACTIVE_MODAL_ITEM._key];
+      $('orderItemModal').classList.remove('open');
+      updateCartFooter();
+      renderOrderList();
+    };
+
+    // Review & Save Order
+    $('btnReviewOrder').onclick = () => {
+      const lines = Object.values(CART);
+      if (!lines.length) { toast('Cart is empty', true); return; }
+      $('revPartyName').textContent = $('orderPartyName').value || '(No party entered)';
+      $('revRoute').textContent = $('orderRoute').value || '-';
+      const u = AnilApi.getConfig().user;
+      $('revSalesman').textContent = u ? u.name : '-';
+      $('revDate').textContent = todayStr();
+      $('revItemsList').innerHTML = lines.map((l) => `
+        <div class="rev-line">
+          <div><b>${escapeHtml(l.ItemName)}</b><div class="meta">${l.Qty} ${escapeHtml(l.Pack)} × ₹${l.Rate}</div></div>
+          <div class="amt">₹${Number(l.Amount).toFixed(2)}</div>
+        </div>`).join('');
+      $('revQty').textContent = lines.reduce((s, x) => s + Number(x.Qty), 0);
+      $('revTotalAmount').textContent = lines.reduce((s, x) => s + Number(x.Amount), 0).toFixed(2);
+      $('reviewOrderModal').classList.add('open');
+    };
+
+    $('btnFinalizeOrder').onclick = () => saveOrderFromCart(false);
+    $('btnFinalizeOrderWa').onclick = () => saveOrderFromCart(true);
+
+    // Saved Orders Actions
+    $('btnCloudSync').onclick = () => autoSyncAll(false);
+    $('savedSearchInput').oninput = renderSavedOrders;
+    $('savedChips').onclick = (e) => {
+      const b = e.target.closest('.chip');
+      if (!b) return;
+      $('savedChips').querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+      b.classList.add('active');
+      savedFilter = b.dataset.filter;
+      renderSavedOrders();
+    };
+    $('savedOrdersContainer').onclick = (e) => {
+      const editBtn = e.target.closest('[data-edit-order]');
+      if (editBtn) { startEditOrder(editBtn.dataset.editOrder); return; }
+      const waBtn = e.target.closest('[data-wa-order]');
+      if (waBtn) {
+        const ord = ORDERS.find((o) => o.id === waBtn.dataset.waOrder);
+        if (ord) shareOrderWhatsApp(ord);
+      }
+    };
+
+    // My Tasks Actions
+    $('btnRefreshTasks').onclick = renderTasksList;
+    $('tasksContainer').onclick = (e) => {
+      const card = e.target.closest('[data-open-task]');
+      if (card) openTaskExecution(card.dataset.openTask);
+    };
+    $('btnBackToTasks').onclick = renderTasksList;
+
+    $('execItemsContainer').onclick = async (e) => {
+      const btn = e.target.closest('[data-tact]');
+      if (!btn || !ACTIVE_TASK) return;
+      const itemNo = Number(btn.dataset.titem);
+      const act = btn.dataset.tact;
+      const item = ACTIVE_TASK.items.find((x) => Number(x.itemNo) === itemNo);
+      if (!item) return;
+
+      item.resultStatus = act;
+      if (act === 'Done') item.fulfilledQty = item.orderedQty;
+      else if (act === 'Not Available') item.fulfilledQty = 0;
+      else if (act === 'Partial' && item.fulfilledQty >= item.orderedQty) item.fulfilledQty = Math.max(0, item.orderedQty - 1);
+
+      await AnilDB.putOne('tasks', ACTIVE_TASK);
+      renderTaskItems();
+      await queueTaskAction({
+        type: 'taskItemResult',
+        orderId: ACTIVE_TASK.orderId,
+        itemNo,
+        resultStatus: act,
+        fulfilledQty: item.fulfilledQty,
+        reason: item.reason || ''
+      });
+    };
+
+    $('execItemsContainer').onchange = async (e) => {
+      if (!ACTIVE_TASK) return;
+      const qInp = e.target.closest('[data-part-qty]');
+      const rInp = e.target.closest('[data-part-reason]');
+      const el = qInp || rInp;
+      if (!el) return;
+      const itemNo = Number(qInp ? qInp.dataset.partQty : rInp.dataset.partReason);
+      const item = ACTIVE_TASK.items.find((x) => Number(x.itemNo) === itemNo);
+      if (!item) return;
+      if (qInp) item.fulfilledQty = Math.max(0, Math.min(item.orderedQty, Number(qInp.value) || 0));
+      if (rInp) item.reason = rInp.value.trim();
+      await AnilDB.putOne('tasks', ACTIVE_TASK);
+      await queueTaskAction({
+        type: 'taskItemResult',
+        orderId: ACTIVE_TASK.orderId,
+        itemNo,
+        resultStatus: item.resultStatus,
+        fulfilledQty: item.fulfilledQty,
+        reason: item.reason || ''
+      });
+    };
+
+    $('btnCompleteTask').onclick = async () => {
+      if (!ACTIVE_TASK) return;
+      const oid = ACTIVE_TASK.orderId;
+      const itemsPayload = ACTIVE_TASK.items.map((it) => ({
+        itemNo: it.itemNo,
+        resultStatus: it.resultStatus === 'Pending' ? 'Done' : it.resultStatus,
+        fulfilledQty: it.resultStatus === 'Pending' ? it.orderedQty : it.fulfilledQty,
+        reason: it.reason || ''
+      }));
+      TASKS = TASKS.filter((t) => t.orderId !== oid);
+      await AnilDB.deleteOne('tasks', oid);
+      await queueTaskAction({ type: 'taskComplete', orderId: oid, items: itemsPayload });
+      toast(`✅ Order ${oid} sent for Billing!`);
+      ACTIVE_TASK = null;
+      renderTasksList();
+    };
+
+    // Stock sync & Setup
+    $('btnTopSyncStock').onclick = () => downloadStockFeed(false);
+    $('btnUpdateStock').onclick = () => downloadStockFeed(false);
+    $('btnSaveWebhook').onclick = () => {
+      AnilApi.setUrl($('settingsWebhookUrlInput').value);
+      toast('Server URL saved ✓');
+    };
+    $('btnLogout').onclick = () => {
+      AnilApi.setSession(null);
+      applyUserRoleUI();
+    };
+
+    $('btnLoadMaster').onclick = () => { replaceMasterMode = false; $('fileInput').click(); };
+    $('btnReplaceMaster').onclick = () => { replaceMasterMode = true; $('fileInput').click(); };
+    $('fileInput').onchange = (e) => { if (e.target.files[0]) handleExcelUpload(e.target.files[0]); e.target.value = ''; };
+
+    $('btnImportPdf').onclick = () => $('pdfFileInput').click();
+    $('pdfFileInput').onchange = async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      await AnilDB.putOne('pdfs', { id: 'PDF_' + Date.now(), name: f.name, size: f.size, blob: f });
+      renderCatalogues();
+      toast('Catalogue saved offline ✓');
+      e.target.value = '';
+    };
+    $('cataloguesContainer').onclick = async (e) => {
+      const o = e.target.closest('[data-open-pdf]');
+      if (o) { openPdfViewer(o.dataset.openPdf); return; }
+      const d = e.target.closest('[data-del-pdf]');
+      if (d) { await AnilDB.deleteOne('pdfs', d.dataset.delPdf); renderCatalogues(); }
+    };
+    $('btnPdfClose').onclick = () => $('pdfViewerModal').classList.remove('open');
+    $('btnPdfPrev').onclick = () => { if (pdfDoc && pdfPageNum > 1) renderPdfPage(--pdfPageNum); };
+    $('btnPdfNext').onclick = () => { if (pdfDoc && pdfPageNum < pdfDoc.numPages) renderPdfPage(++pdfPageNum); };
+
+    // Modal close buttons
+    document.querySelectorAll('[data-close-modal]').forEach((b) => {
+      b.onclick = () => $(b.dataset.closeModal).classList.remove('open');
+    });
+
+    // Clear search buttons
+    document.querySelectorAll('[data-clear]').forEach((b) => {
+      b.onclick = () => {
+        const inp = $(b.dataset.clear);
+        inp.value = '';
+        inp.dispatchEvent(new Event('input'));
+      };
+    });
+
+    // Online event auto-sync
+    window.addEventListener('online', () => {
+      updateClock();
+      toast('Back online — syncing…');
+      autoSyncAll(true);
+    });
+    window.addEventListener('offline', updateClock);
+  }
+
+  // ---------------- Boot ----------------
+  async function boot() {
+    updateClock();
+    setInterval(updateClock, 15000);
+
+    await AnilDB.migrateFromLegacyLocalStorage();
+    ITEMS = await AnilDB.getAll('items');
+    ORDERS = await AnilDB.getAll('orders');
+    TASKS = await AnilDB.getAll('tasks');
+    ORDERS.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+
+    prepareItemsSearchIndex();
+    refreshItemFilters();
+    renderOrderList();
+    updateCartFooter();
+    updateSavedBadge();
+    updateStockStatusLabel();
+    bindEvents();
+    applyUserRoleUI();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
+    if (navigator.onLine && AnilApi.getConfig().token) {
+      downloadStockFeed(true);
+      autoSyncAll(true);
+    }
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
